@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary */
+  --color-primary: #0969da;
+  --color-primary-hover: #0550ae;
+
+  /* Backend types */
+  --color-cloud: #8250df;
+  --color-cloud-bg: #fbefff;
+  --color-cloud-light: #faf5ff;
+  --color-webgpu: #0969da;
+  --color-webgpu-bg: #ddf4ff;
+  --color-wasm: #1a7f37;
+  --color-wasm-bg: #dafbe1;
+  --color-wasm-light: #f0fff4;
+
+  /* Semantic */
+  --color-success: #1a7f37;
+  --color-warning: #bf8700;
+  --color-error: #cf222e;
+
+  /* Neutral */
+  --color-bg: #f6f8fa;
+  --color-surface: #ffffff;
+  --color-border: #d1d9e0;
+  --color-border-light: #eaeef2;
+  --color-text-primary: #1f2328;
+  --color-text-secondary: #656d76;
+  --color-text-tertiary: #8b949e;
+  --color-text-disabled: #b0b8c1;
+
+  /* Chart */
+  --color-chart-cloud: #c297dc;
+  --color-chart-cloud-dark: #8250df;
+  --color-chart-webgpu: #79c0ff;
+  --color-chart-webgpu-dark: #0969da;
+  --color-chart-wasm: #7ee787;
+  --color-chart-wasm-dark: #1a7f37;
+
+  /* Rating */
+  --color-star-filled: #bf8700;
+  --color-star-empty: #d1d9e0;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Font */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}

@@ -1,0 +1,44 @@
+{
+  "id": "d253495a-914e-4bcc-9e85-5bfbcd8429a5",
+  "prompt": "Explain quantum computing in simple terms for a 10-year-old",
+  "parameters": {
+    "temperature": 0.7,
+    "maxTokens": 256,
+    "topP": 0.9,
+    "repeatPenalty": 1.1
+  },
+  "configs": [
+    {
+      "id": "HuggingFaceTB/SmolLM2-135M-Instruct-q4-webgpu-1775745863430",
+      "modelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "displayName": "SmolLM2-135M-Instruct",
+      "quantization": "q4",
+      "backend": "webgpu"
+    }
+  ],
+  "results": [
+    {
+      "config": {
+        "id": "HuggingFaceTB/SmolLM2-135M-Instruct-q4-webgpu-1775745863430",
+        "modelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "displayName": "SmolLM2-135M-Instruct",
+        "quantization": "q4",
+        "backend": "webgpu"
+      },
+      "metrics": {
+        "modelSize": 184177866,
+        "loadTime": 11752.099999999627,
+        "initTime": 320.59999999962747,
+        "ttft": 442.6000000014901,
+        "tokensPerSecond": 88.72618973748268,
+        "totalTime": 13684.400000000373,
+        "tokenCount": 143
+      },
+      "output": "Imagine it like this: we have something really cool called 'quantum bits' or QBs. They can do magic with numbers, just like how your phone works! Quantum computing is like using special helpers who can think and work faster than regular computers. They're very important because they help us build super fast computers, which might make the world a lot easier one day.\n\nWorst part of all that's that some people don't know much about what they're doing. That's why it's important to use lots of new kinds of people when building these kind of tools. This helps avoid trouble - if you mess up quick then you'll be on high alert - so our scientists and engineers are all ready. We need different types of people to take care of different things at once, but that's what makes it so awesome!",
+      "rating": null,
+      "timestamp": 1775745990404
+    }
+  ],
+  "startedAt": 1775745990404,
+  "completedAt": 1775746042420
+}

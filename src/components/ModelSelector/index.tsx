@@ -1,0 +1,387 @@
+import { useState, useEffect, useRef } from 'react'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { searchModels, fetchAvailableQuantizations } from '../../lib/hfSearch'
+import { useCompareStore } from '../../stores/useCompareStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
+import type {
+  Quantization,
+  Backend,
+  CloudProvider,
+  TestConfig,
+  HFModelResult,
+} from '../../types'
+
+const BACKEND_OPTIONS: Backend[] = ['webgpu', 'wasm']
+
+const CLOUD_MODELS: {
+  provider: CloudProvider
+  displayName: string
+  cloudModel: string
+}[] = [
+  { provider: 'openai', displayName: 'GPT-4o-mini', cloudModel: 'gpt-4o-mini' },
+  { provider: 'anthropic', displayName: 'Claude 3.5 Haiku', cloudModel: 'claude-3-5-haiku-latest' },
+  { provider: 'google', displayName: 'Gemini 2.0 Flash', cloudModel: 'gemini-2.0-flash' },
+]
+
+// Cache quantizations per model to avoid re-fetching
+const quantCache = new Map<string, Quantization[]>()
+
+export function ModelSelector() {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<HFModelResult[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  // Track available quantizations per config (loaded on-demand)
+  const [configQuants, setConfigQuants] = useState<Record<string, Quantization[]>>({})
+  const debouncedQuery = useDebouncedValue(query, 300)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  const configs = useCompareStore((s) => s.configs)
+  const addConfig = useCompareStore((s) => s.addConfig)
+  const removeConfig = useCompareStore((s) => s.removeConfig)
+  const executionStatus = useCompareStore((s) => s.executionStatus)
+
+  const apiKeys = useSettingsStore((s) => s.apiKeys)
+  const webgpuSupported = useSettingsStore((s) => s.webgpuSupported)
+
+  const disabled = executionStatus === 'running' || executionStatus === 'downloading'
+
+  // Search HuggingFace when debounced query changes
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setResults([])
+      setIsOpen(false)
+      return
+    }
+
+    let cancelled = false
+    setLoading(true)
+
+    searchModels(debouncedQuery).then((models) => {
+      if (!cancelled) {
+        setResults(models)
+        setIsOpen(models.length > 0)
+        setLoading(false)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [debouncedQuery])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  async function handleSelectModel(model: HFModelResult) {
+    const defaultBackend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
+
+    // Fetch available quantizations (from cache or API)
+    let quants = quantCache.get(model.modelId)
+    if (!quants) {
+      quants = await fetchAvailableQuantizations(model.modelId)
+      quantCache.set(model.modelId, quants)
+    }
+
+    // Default to q4 if available, otherwise first available
+    const defaultQuant = quants.includes('q4') ? 'q4' : quants[0]
+
+    const config: TestConfig = {
+      id: `${model.modelId}-${defaultQuant}-${defaultBackend}-${Date.now()}`,
+      modelId: model.modelId,
+      displayName: model.name,
+      quantization: defaultQuant,
+      backend: defaultBackend,
+    }
+    addConfig(config)
+
+    // Store available quants for this config
+    setConfigQuants((prev) => ({ ...prev, [config.id]: quants! }))
+
+    setQuery('')
+    setResults([])
+    setIsOpen(false)
+  }
+
+  function handleAddCloudModel(provider: CloudProvider, displayName: string, cloudModel: string) {
+    const config: TestConfig = {
+      id: `cloud-${provider}-${cloudModel}-${Date.now()}`,
+      modelId: cloudModel,
+      displayName,
+      quantization: 'fp16',
+      backend: 'api',
+      provider,
+      cloudModel,
+    }
+    addConfig(config)
+  }
+
+  function handleQuantChange(configId: string, quantization: Quantization) {
+    const existing = configs.find((c) => c.id === configId)
+    if (!existing) return
+    const quants = configQuants[configId]
+    removeConfig(configId)
+    const newConfig = { ...existing, quantization }
+    addConfig(newConfig)
+    // Preserve quant options for the new config ID
+    if (quants) {
+      setConfigQuants((prev) => {
+        const next = { ...prev }
+        delete next[configId]
+        next[newConfig.id] = quants
+        return next
+      })
+    }
+  }
+
+  function handleBackendChange(configId: string, backend: Backend) {
+    const existing = configs.find((c) => c.id === configId)
+    if (!existing) return
+    const quants = configQuants[configId]
+    removeConfig(configId)
+    const newConfig = { ...existing, backend }
+    addConfig(newConfig)
+    if (quants) {
+      setConfigQuants((prev) => {
+        const next = { ...prev }
+        delete next[configId]
+        next[newConfig.id] = quants
+        return next
+      })
+    }
+  }
+
+  function handleRemoveConfig(configId: string) {
+    removeConfig(configId)
+    setConfigQuants((prev) => {
+      const next = { ...prev }
+      delete next[configId]
+      return next
+    })
+  }
+
+  const localConfigs = configs.filter((c) => c.backend !== 'api')
+  const cloudConfigs = configs.filter((c) => c.backend === 'api')
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+        Models
+      </div>
+
+      {/* Search input with autocomplete */}
+      <div ref={wrapperRef} className="relative mb-4">
+        <input
+          type="text"
+          className="w-full rounded-lg border border-border bg-bg p-2.5 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none"
+          placeholder="Search HuggingFace ONNX models..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => results.length > 0 && setIsOpen(true)}
+          disabled={disabled}
+        />
+        {loading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">
+            Searching...
+          </div>
+        )}
+
+        {isOpen && results.length > 0 && (
+          <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-surface shadow-lg">
+            {results.map((model) => (
+              <li key={model.modelId}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-bg"
+                  onClick={() => handleSelectModel(model)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-text-primary">
+                      {model.modelId}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
+                      <span>{model.pipelineTag}</span>
+                      <span className="rounded bg-webgpu-bg px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                        ONNX
+                      </span>
+                      {model.libraryName === 'transformers.js' && (
+                        <span className="rounded bg-wasm-bg px-1.5 py-0.5 text-[10px] font-semibold text-wasm">
+                          transformers.js
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ml-3 flex shrink-0 gap-3 text-[11px] text-text-tertiary">
+                    <span title="Downloads">{formatCount(model.downloads)}</span>
+                    <span title="Likes">{formatCount(model.likes)}</span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Local model chips */}
+      {localConfigs.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {localConfigs.map((config) => {
+            const quants = configQuants[config.id] ?? ['q4', 'q8', 'fp16', 'fp32'] as Quantization[]
+            return (
+              <div
+                key={config.id}
+                className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3.5 py-2 text-xs"
+              >
+                <span className="font-medium text-text-primary">{config.displayName}</span>
+
+                <select
+                  className="rounded border border-border bg-bg px-1.5 py-0.5 text-[11px] font-semibold text-text-primary focus:outline-none"
+                  value={config.quantization}
+                  onChange={(e) => handleQuantChange(config.id, e.target.value as Quantization)}
+                  disabled={disabled}
+                >
+                  {quants.map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+                    config.backend === 'wasm'
+                      ? 'bg-wasm-bg text-wasm'
+                      : 'bg-webgpu-bg text-primary'
+                  }`}
+                >
+                  {config.quantization}
+                </span>
+
+                <select
+                  className="rounded border border-border bg-bg px-1.5 py-0.5 text-[11px] font-semibold text-text-primary focus:outline-none"
+                  value={config.backend}
+                  onChange={(e) => handleBackendChange(config.id, e.target.value as Backend)}
+                  disabled={disabled}
+                >
+                  {BACKEND_OPTIONS.filter((b) => b !== 'webgpu' || webgpuSupported).map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+                    config.backend === 'webgpu'
+                      ? 'bg-webgpu-bg text-primary'
+                      : 'bg-wasm-bg text-wasm'
+                  }`}
+                >
+                  {config.backend}
+                </span>
+
+                <button
+                  type="button"
+                  className="ml-1 text-text-tertiary hover:text-error"
+                  onClick={() => handleRemoveConfig(config.id)}
+                  disabled={disabled}
+                  aria-label={`Remove ${config.displayName}`}
+                >
+                  x
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Cloud model chips (already added) */}
+      {cloudConfigs.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {cloudConfigs.map((config) => (
+            <div
+              key={config.id}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3.5 py-2 text-xs"
+            >
+              <span className="font-medium text-text-primary">{config.displayName}</span>
+              <span className="rounded bg-cloud-bg px-1.5 py-0.5 text-[11px] font-semibold text-cloud">
+                {config.provider}
+              </span>
+              <button
+                type="button"
+                className="ml-1 text-text-tertiary hover:text-error"
+                onClick={() => handleRemoveConfig(config.id)}
+                disabled={disabled}
+                aria-label={`Remove ${config.displayName}`}
+              >
+                x
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Cloud model quick-add buttons */}
+      {CLOUD_MODELS.some((cm) => apiKeys[cm.provider]) && (
+        <div>
+          <div className="mb-2 text-[11px] font-medium text-text-tertiary">
+            Cloud models
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {CLOUD_MODELS.filter((cm) => apiKeys[cm.provider]).map((cm) => {
+              const alreadyAdded = configs.some(
+                (c) => c.provider === cm.provider && c.cloudModel === cm.cloudModel
+              )
+              return (
+                <button
+                  key={cm.cloudModel}
+                  type="button"
+                  className={`flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs transition-colors ${
+                    alreadyAdded
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'hover:bg-bg cursor-pointer'
+                  }`}
+                  onClick={() =>
+                    !alreadyAdded &&
+                    handleAddCloudModel(cm.provider, cm.displayName, cm.cloudModel)
+                  }
+                  disabled={disabled || alreadyAdded}
+                >
+                  <span className="rounded bg-cloud-bg px-1.5 py-0.5 text-[10px] font-semibold text-cloud">
+                    {cm.provider}
+                  </span>
+                  <span className="font-medium text-text-primary">{cm.displayName}</span>
+                  {alreadyAdded ? (
+                    <span className="text-text-tertiary">added</span>
+                  ) : (
+                    <span className="text-primary">+</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {configs.length === 0 && (
+        <p className="text-xs text-text-tertiary">
+          Search for a model above or add a cloud model to get started.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
