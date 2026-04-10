@@ -1,6 +1,7 @@
 import { useCompareStore } from '../stores/useCompareStore'
 import { PromptInput } from '../components/PromptInput'
 import { ModelSelector } from '../components/ModelSelector'
+import { PreDownload } from '../components/PreDownload'
 import { TestControls } from '../components/TestControls'
 import { TestProgress } from '../components/TestProgress'
 import { ResultsSummary } from '../components/ResultsSummary'
@@ -20,6 +21,7 @@ export function ComparePage() {
     <div className="flex flex-col gap-4">
       <PromptInput />
       <ModelSelector />
+      <PreDownload />
       <TestControls />
       {isRunning && <TestProgress />}
       {hasResults && (

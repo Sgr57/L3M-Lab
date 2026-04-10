@@ -1,31 +1,28 @@
 import { useCompareStore } from '../../stores/useCompareStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
-import { startDownload, startComparison, cancelExecution } from '../../lib/workerBridge'
+import { startComparison, cancelExecution } from '../../lib/workerBridge'
+import { formatSize } from '../../lib/formatSize'
 
-export function TestControls() {
+export function TestControls(): React.ReactElement {
   const prompt = useCompareStore((s) => s.prompt)
-  const parameters = useSettingsStore((s) => s.parameters)
   const configs = useCompareStore((s) => s.configs)
   const status = useCompareStore((s) => s.executionStatus)
+  const parameters = useSettingsStore((s) => s.parameters)
 
   const isBusy = status === 'running' || status === 'downloading'
   const hasConfigs = configs.length > 0
   const hasPrompt = prompt.trim().length > 0
 
-  const estimatedDownload = configs.reduce((acc, c) => {
-    const sizeMap: Record<string, number> = { q4: 0.5, q8: 1, fp16: 2, fp32: 4 }
-    return acc + (sizeMap[c.quantization] ?? 1)
-  }, 0)
-
-  const formatSize = (gb: number) =>
-    gb >= 1 ? `${gb.toFixed(1)} GB` : `${(gb * 1024).toFixed(0)} MB`
+  // Calculate estimated download from real estimatedSize bytes (per D-10)
+  const totalDownloadSize = configs
+    .filter((c) => c.backend !== 'api' && !c.cached)
+    .reduce((acc, c) => acc + (c.estimatedSize ?? 0), 0)
 
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-xs text-text-secondary">
         {configs.length} model{configs.length !== 1 ? 's' : ''} selected
-        {' \u00b7 '}
-        Est. download: {formatSize(estimatedDownload)}
+        {totalDownloadSize > 0 ? ` \u00b7 Est. download: ${formatSize(totalDownloadSize)}` : ''}
       </span>
 
       <div className="flex items-center gap-3">
@@ -38,15 +35,6 @@ export function TestControls() {
             Cancel
           </button>
         )}
-
-        <button
-          type="button"
-          className="rounded-lg border border-primary px-6 py-2.5 text-sm font-semibold text-primary bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={isBusy || !hasConfigs}
-          onClick={() => startDownload(configs)}
-        >
-          Pre-Download Models
-        </button>
 
         <button
           type="button"
