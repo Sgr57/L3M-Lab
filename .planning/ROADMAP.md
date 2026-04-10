@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Token count after generation matches actual tokenizer output, not TextStreamer chunk count
   3. NavBar displays app name, navigation links (Compare active, Settings), and a WebGPU support badge that reflects runtime detection
   4. Color coding constants (purple cloud, blue WebGPU, green WASM) are defined once and used consistently across all components
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Vite COOP/COEP headers, worker format 'es', verify NavBar and WebGPU badge
+- [ ] 01-02-PLAN.md -- Fix token counting bug in inference worker, verify color system
 
 ### Phase 2: Model Selection & Settings
 **Goal**: Users can fully configure which models to test, including local models from HuggingFace and cloud models gated by API keys
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Critical Fixes | 0/2 | Not started | - |
+| 1. Foundation & Critical Fixes | 0/2 | Planned | - |
 | 2. Model Selection & Settings | 0/3 | Not started | - |
 | 3. Prompt Input & Test Controls | 0/2 | Not started | - |
 | 4. Execution Engine & Progress | 0/3 | Not started | - |
