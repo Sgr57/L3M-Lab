@@ -17,13 +17,12 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 - [x] Token counting uses tokenizer.encode for accurate metrics — Validated in Phase 1: Foundation & Critical Fixes
 - [x] Navigation bar with WebGPU support badge — Validated in Phase 1: Foundation & Critical Fixes
 - [x] Consistent color coding: purple (#8250df) cloud, blue (#0969da) WebGPU, green (#1a7f37) WASM — Validated in Phase 1: Foundation & Critical Fixes
+- [x] HuggingFace model search with autocomplete, filtered for ONNX/transformers.js-compatible text-generation models — Validated in Phase 2: Model Selection & Settings
+- [x] Model chip configuration: quantization selector (from available ONNX variants), backend selector (WebGPU/WASM), cache status, download size estimate — Validated in Phase 2: Model Selection & Settings
+- [x] Cloud model selection (GPT, Claude, Gemini) gated by API key presence — Validated in Phase 2: Model Selection & Settings
+- [x] Settings page for API key management (localStorage persistence) — Validated in Phase 2: Model Selection & Settings
 
 ### Active
-
-- [ ] HuggingFace model search with autocomplete, filtered for ONNX/transformers.js-compatible text-generation models
-- [ ] Direct model ID input via smart detection (contains `/`) with API validation
-- [ ] Model chip configuration: quantization selector (from available ONNX variants), backend selector (WebGPU/WASM), cache status, download size estimate
-- [ ] Cloud model selection (GPT, Claude, Gemini) gated by API key presence
 - [ ] Multi-line prompt input with inline generation parameters (temperature, max tokens, top-p, repeat penalty)
 - [ ] Pre-download models in parallel without loading into memory
 - [ ] Sequential test execution with live streaming output and progress
@@ -33,7 +32,6 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 - [ ] Sortable comparison table with color-coded rows by model type
 - [ ] Output comparison cards with collapsible full text and star rating
 - [ ] Export results as JSON, CSV, and Markdown
-- [ ] Settings page for API key management (localStorage persistence)
 
 ### Out of Scope
 
