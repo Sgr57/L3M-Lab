@@ -390,22 +390,22 @@ const QUANT_ONNX_FILENAMES: Record<Quantization, string[]> = {
 | A4 | Stale cache status after download is a real concern needing re-check logic | Common Pitfalls | LOW: May not be noticeable in POC usage |
 | A5 | transformers.js main thread import would significantly increase bundle size | Architecture Patterns | MEDIUM: Vite tree-shaking might handle it, but safer to avoid for POC |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **ONNX file naming for multi-part models**
    - What we know: Simple models have single `model_q4.onnx` files. Some models use `decoder_model_q4.onnx` or split files.
    - What's unclear: Whether size estimation should account for all ONNX files (encoder + decoder) or just the primary model file.
-   - Recommendation: Sum all `.onnx` files matching the quantization suffix. This gives the total download size which is what the user cares about.
+   - RESOLVED: Sum all `.onnx` files matching the quantization suffix. This gives the total download size which is what the user cares about.
 
 2. **Cloud chips placement: inside or outside accordion?**
    - What we know: D-07 says cloud models in accordion, D-10 defines cloud chip style.
    - What's unclear: CONTEXT.md lists "whether to show cloud chips inside or outside the accordion" as Claude's discretion.
-   - Recommendation: Show cloud chips **outside** the accordion (below local chips, above the accordion). This way the accordion only contains the quick-add buttons, and all active chips are visible together. Better UX for seeing what's configured at a glance.
+   - RESOLVED: Show cloud chips **outside** the accordion (below local chips, above the accordion). This way the accordion only contains the quick-add buttons, and all active chips are visible together. Better UX for seeing what's configured at a glance.
 
 3. **Cache check timing and reactivity**
    - What we know: D-12 says check cache when chip is created. D-13 says recalculate when quantization changes.
    - What's unclear: Should cache status auto-update after model downloads complete?
-   - Recommendation: For POC, check cache on chip creation and quantization change only. Auto-update after download is a nice-to-have that can be added if time permits.
+   - RESOLVED: For POC, check cache on chip creation and quantization change only. Auto-update after download is a nice-to-have that can be added if time permits.
 
 ## Validation Architecture
 
