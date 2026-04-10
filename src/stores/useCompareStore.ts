@@ -21,6 +21,7 @@ interface CompareState {
   setParameter: <K extends keyof GenerationParameters>(key: K, value: GenerationParameters[K]) => void
   addConfig: (config: TestConfig) => void
   removeConfig: (configId: string) => void
+  updateConfig: (configId: string, updates: Partial<Pick<TestConfig, 'quantization' | 'backend' | 'estimatedSize' | 'cached'>>) => void
   setExecutionStatus: (status: ExecutionStatus) => void
   setRunProgress: (progress: RunProgress | null) => void
   setDownloadProgress: (progress: DownloadProgress | null) => void
@@ -60,6 +61,13 @@ export const useCompareStore = create<CompareState>()((set) => ({
   removeConfig: (configId) =>
     set((state) => ({
       configs: state.configs.filter((c) => c.id !== configId),
+    })),
+
+  updateConfig: (configId, updates) =>
+    set((state) => ({
+      configs: state.configs.map((c) =>
+        c.id === configId ? { ...c, ...updates } : c
+      ),
     })),
 
   setExecutionStatus: (status) => set({ executionStatus: status }),
