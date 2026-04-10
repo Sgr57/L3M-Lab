@@ -1,9 +1,10 @@
 import { useCompareStore } from '../../stores/useCompareStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
 import { startDownload, startComparison, cancelExecution } from '../../lib/workerBridge'
 
 export function TestControls() {
   const prompt = useCompareStore((s) => s.prompt)
-  const parameters = useCompareStore((s) => s.parameters)
+  const parameters = useSettingsStore((s) => s.parameters)
   const configs = useCompareStore((s) => s.configs)
   const status = useCompareStore((s) => s.executionStatus)
 

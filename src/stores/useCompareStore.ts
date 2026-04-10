@@ -2,44 +2,35 @@ import { create } from 'zustand'
 import type {
   TestConfig,
   TestResult,
-  GenerationParameters,
   ExecutionStatus,
   RunProgress,
-  DownloadProgress,
+  MultiModelDownloadProgress,
+  ModelDownloadStatus,
 } from '../types'
 
 interface CompareState {
   prompt: string
-  parameters: GenerationParameters
   configs: TestConfig[]
   results: TestResult[]
   executionStatus: ExecutionStatus
   runProgress: RunProgress | null
-  downloadProgress: DownloadProgress | null
+  downloadProgress: MultiModelDownloadProgress | null
 
   setPrompt: (prompt: string) => void
-  setParameter: <K extends keyof GenerationParameters>(key: K, value: GenerationParameters[K]) => void
   addConfig: (config: TestConfig) => void
   removeConfig: (configId: string) => void
   updateConfig: (configId: string, updates: Partial<Pick<TestConfig, 'quantization' | 'backend' | 'estimatedSize' | 'cached'>>) => void
   setExecutionStatus: (status: ExecutionStatus) => void
   setRunProgress: (progress: RunProgress | null) => void
-  setDownloadProgress: (progress: DownloadProgress | null) => void
+  setDownloadProgress: (progress: MultiModelDownloadProgress | null) => void
+  updateModelDownloadStatus: (configId: string, update: Partial<Pick<ModelDownloadStatus, 'status' | 'progress' | 'loaded' | 'total' | 'error'>>) => void
   addResult: (result: TestResult) => void
   updateRating: (configId: string, rating: number) => void
   reset: () => void
 }
 
-const defaultParameters: GenerationParameters = {
-  temperature: 0.7,
-  maxTokens: 256,
-  topP: 0.9,
-  repeatPenalty: 1.1,
-}
-
 export const useCompareStore = create<CompareState>()((set) => ({
   prompt: '',
-  parameters: defaultParameters,
   configs: [],
   results: [],
   executionStatus: 'idle',
@@ -47,11 +38,6 @@ export const useCompareStore = create<CompareState>()((set) => ({
   downloadProgress: null,
 
   setPrompt: (prompt) => set({ prompt }),
-
-  setParameter: (key, value) =>
-    set((state) => ({
-      parameters: { ...state.parameters, [key]: value },
-    })),
 
   addConfig: (config) =>
     set((state) => ({
@@ -75,6 +61,16 @@ export const useCompareStore = create<CompareState>()((set) => ({
   setRunProgress: (progress) => set({ runProgress: progress }),
 
   setDownloadProgress: (progress) => set({ downloadProgress: progress }),
+
+  updateModelDownloadStatus: (configId, update) =>
+    set((state) => ({
+      downloadProgress: state.downloadProgress ? {
+        ...state.downloadProgress,
+        models: state.downloadProgress.models.map((m) =>
+          m.configId === configId ? { ...m, ...update } : m
+        ),
+      } : null,
+    })),
 
   addResult: (result) =>
     set((state) => ({

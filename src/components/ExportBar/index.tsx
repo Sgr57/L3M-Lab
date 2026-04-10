@@ -1,4 +1,5 @@
 import { useCompareStore } from '../../stores/useCompareStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
 import {
   formatAsMarkdown,
   formatAsCSV,
@@ -9,7 +10,8 @@ import {
 } from '../../lib/exportUtils'
 
 export function ExportBar() {
-  const { prompt, parameters, configs, results } = useCompareStore()
+  const { prompt, configs, results } = useCompareStore()
+  const parameters = useSettingsStore((s) => s.parameters)
 
   function getRun() {
     const startedAt = results.length > 0 ? results[0].timestamp : Date.now()

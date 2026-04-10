@@ -87,3 +87,18 @@ export interface DownloadProgress {
   loaded: number
   total: number
 }
+
+export interface ModelDownloadStatus {
+  configId: string
+  modelName: string
+  status: 'waiting' | 'downloading' | 'complete' | 'error'
+  progress: number   // 0-100
+  loaded: number     // bytes loaded
+  total: number      // bytes total
+  error?: string
+}
+
+export interface MultiModelDownloadProgress {
+  models: ModelDownloadStatus[]
+  currentIndex: number
+}
