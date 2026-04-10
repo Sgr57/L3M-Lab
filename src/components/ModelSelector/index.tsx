@@ -114,7 +114,7 @@ export function ModelSelector() {
     const cached = await isModelCached(model.modelId, defaultQuant)
 
     const config: TestConfig = {
-      id: `${model.modelId}-${defaultQuant}-${defaultBackend}-${Date.now()}`,
+      id: `${model.modelId}-${defaultQuant}-${defaultBackend}-${crypto.randomUUID()}`,
       modelId: model.modelId,
       displayName: model.name,
       quantization: defaultQuant,
@@ -137,7 +137,7 @@ export function ModelSelector() {
 
   function handleAddCloudModel(provider: CloudProvider, displayName: string, cloudModel: string) {
     const config: TestConfig = {
-      id: `cloud-${provider}-${cloudModel}-${Date.now()}`,
+      id: `cloud-${provider}-${cloudModel}-${crypto.randomUUID()}`,
       modelId: cloudModel,
       displayName,
       quantization: 'fp16',
