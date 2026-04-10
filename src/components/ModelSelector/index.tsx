@@ -26,6 +26,10 @@ const CONFIG_COLORS = [
   '#14b8a6', // teal
   '#eab308', // yellow
   '#ef4444', // red
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+  '#f43f5e', // rose
+  '#6366f1', // indigo
 ]
 
 const CLOUD_MODELS: {
@@ -277,7 +281,7 @@ export function ModelSelector() {
         <div className="mb-3 flex flex-wrap gap-2">
           {localConfigs.map((config) => {
             const details = configDetails[config.id]
-            const quants = details?.quants ?? ['q4', 'q8', 'fp16', 'fp32'] as Quantization[]
+            const quants = details?.quants ?? [config.quantization]
             const colorIndex = configs.indexOf(config)
             const color = CONFIG_COLORS[colorIndex % CONFIG_COLORS.length]
             return (
