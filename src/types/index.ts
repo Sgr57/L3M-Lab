@@ -18,6 +18,8 @@ export interface TestConfig {
   backend: Backend
   provider?: CloudProvider
   cloudModel?: string
+  estimatedSize?: number   // bytes, from HF API siblings
+  cached?: boolean         // from browser Cache API
 }
 
 export interface TestMetrics {
