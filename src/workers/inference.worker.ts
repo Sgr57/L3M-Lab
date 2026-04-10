@@ -29,9 +29,12 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
 }
 
 async function handleDownload(configs: TestConfig[]) {
+  cancelled = false
   const localConfigs = configs.filter((c) => c.backend !== 'api')
 
   for (const config of localConfigs) {
+    if (cancelled) break
+
     try {
       post({
         type: 'download-progress',
@@ -45,9 +48,10 @@ async function handleDownload(configs: TestConfig[]) {
       })
 
       // Loading the pipeline triggers the download and caches it
+      // Always WASM for pre-download to avoid GPU memory allocation (per CTRL-01)
       const generator = await pipeline('text-generation', config.modelId, {
         dtype: config.quantization as 'q4' | 'q8' | 'fp16' | 'fp32',
-        device: config.backend as 'webgpu' | 'wasm',
+        device: 'wasm',
         progress_callback: (progress: Record<string, unknown>) => {
           post({
             type: 'download-progress',
@@ -64,6 +68,8 @@ async function handleDownload(configs: TestConfig[]) {
 
       // Dispose immediately — we just wanted to cache the files
       await generator.dispose()
+
+      if (cancelled) break
 
       post({
         type: 'download-progress',

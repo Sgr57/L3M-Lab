@@ -1,5 +1,5 @@
 import type { WorkerCommand, WorkerEvent } from '../types/worker-messages'
-import type { TestConfig, GenerationParameters } from '../types'
+import type { TestConfig, GenerationParameters, ModelDownloadStatus } from '../types'
 import { useCompareStore } from '../stores/useCompareStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { callOpenAI, callAnthropic, callGoogle } from './cloudApis'
@@ -21,9 +21,26 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
   const event = e.data
 
   switch (event.type) {
-    case 'download-progress':
-      store.setDownloadProgress(event.data)
+    case 'download-progress': {
+      const { configId, progress } = event.data
+      const currentStatus = progress >= 100 ? 'complete' as const : 'downloading' as const
+      store.updateModelDownloadStatus(configId, {
+        status: currentStatus,
+        progress: event.data.progress,
+        loaded: event.data.loaded,
+        total: event.data.total,
+      })
+
+      // Update currentIndex to match this configId's position
+      const dp = store.downloadProgress
+      if (dp) {
+        const idx = dp.models.findIndex((m) => m.configId === configId)
+        if (idx >= 0 && idx !== dp.currentIndex) {
+          store.setDownloadProgress({ ...dp, currentIndex: idx })
+        }
+      }
       break
+    }
 
     case 'download-complete':
       store.setExecutionStatus('idle')
@@ -58,7 +75,15 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
       break
 
     case 'error':
-      if (event.configId) {
+      // Mark model as errored in download progress if downloading
+      if (event.configId && store.downloadProgress) {
+        store.updateModelDownloadStatus(event.configId, {
+          status: 'error',
+          error: event.message,
+        })
+      }
+      // Existing run-error handling
+      if (event.configId && store.executionStatus === 'running') {
         store.addResult({
           config: store.configs.find((c) => c.id === event.configId)!,
           metrics: {
@@ -82,9 +107,22 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
 
 export function startDownload(configs: TestConfig[]) {
   const store = useCompareStore.getState()
+  const localConfigs = configs.filter((c) => c.backend !== 'api')
+
+  // Initialize multi-model download progress
+  const models: ModelDownloadStatus[] = localConfigs.map((c) => ({
+    configId: c.id,
+    modelName: c.displayName,
+    status: 'waiting' as const,
+    progress: 0,
+    loaded: 0,
+    total: 0,
+  }))
+
+  store.setDownloadProgress({ models, currentIndex: 0 })
   store.setExecutionStatus('downloading')
 
-  const cmd: WorkerCommand = { type: 'download', configs }
+  const cmd: WorkerCommand = { type: 'download', configs: localConfigs }
   getWorker().postMessage(cmd)
 }
 
@@ -189,6 +227,7 @@ export function cancelExecution() {
   const store = useCompareStore.getState()
   store.setExecutionStatus('cancelled')
   store.setRunProgress(null)
+  store.setDownloadProgress(null)
 
   const cmd: WorkerCommand = { type: 'cancel' }
   getWorker().postMessage(cmd)

@@ -22,15 +22,20 @@ export function TestProgress() {
   const status = useCompareStore((s) => s.executionStatus)
 
   if (status === 'downloading' && downloadProgress) {
-    const pct = downloadProgress.total > 0
-      ? Math.round((downloadProgress.loaded / downloadProgress.total) * 100)
-      : 0
+    const currentModel = downloadProgress.models[downloadProgress.currentIndex]
+    const pct = currentModel && currentModel.total > 0
+      ? Math.round((currentModel.loaded / currentModel.total) * 100)
+      : currentModel ? Math.round(currentModel.progress) : 0
+    const modelName = currentModel?.modelName ?? 'model'
+    const completedCount = downloadProgress.models.filter((m) => m.status === 'complete').length
+    const totalCount = downloadProgress.models.length
 
     return (
       <div className="rounded-xl border border-border border-l-[3px] border-l-warning bg-surface p-5">
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-semibold text-text-primary">
-            Downloading {downloadProgress.modelName}
+            Downloading {modelName}
+            <span className="ml-1 text-text-tertiary">({completedCount + 1}/{totalCount})</span>
           </span>
           <span className="text-text-secondary">{pct}%</span>
         </div>
