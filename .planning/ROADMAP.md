@@ -61,12 +61,12 @@ Plans:
   3. Pre-Download button downloads all non-cached local models in parallel without loading into GPU memory
   4. Run Comparison button starts sequential execution of all selected models; both buttons disable during execution with cancel available
   5. Info text below controls shows model count, estimated download size, and estimated time
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md -- Types, stores, collapsible PromptInput, worker WASM override, workerBridge multi-model progress
+- [ ] 03-02-PLAN.md -- PreDownload component with serial progress, simplified TestControls, ComparePage layout update
 
 ### Phase 4: Execution Engine & Progress
 **Goal**: Sequential model execution is stable, observable, and handles failure gracefully -- users see live progress and streaming output for every model run
