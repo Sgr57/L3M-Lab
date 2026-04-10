@@ -32,8 +32,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Vite COOP/COEP headers, worker format 'es', verify NavBar and WebGPU badge
-- [ ] 01-02-PLAN.md -- Fix token counting bug in inference worker, verify color system
+- [x] 01-01-PLAN.md -- Vite COOP/COEP headers, worker format 'es', verify NavBar and WebGPU badge
+- [x] 01-02-PLAN.md -- Fix token counting bug in inference worker, verify color system
 
 ### Phase 2: Model Selection & Settings
 **Goal**: Users can fully configure which models to test, including local models from HuggingFace and cloud models gated by API keys
