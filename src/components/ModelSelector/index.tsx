@@ -16,6 +16,18 @@ import type {
 
 const BACKEND_OPTIONS: Backend[] = ['webgpu', 'wasm']
 
+// Sequential color palette for distinguishing A/B configs in chips and reports
+const CONFIG_COLORS = [
+  '#3b82f6', // blue
+  '#f97316', // orange
+  '#22c55e', // green
+  '#a855f7', // purple
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#eab308', // yellow
+  '#ef4444', // red
+]
+
 const CLOUD_MODELS: {
   provider: CloudProvider
   displayName: string
@@ -236,8 +248,22 @@ export function ModelSelector() {
                     </div>
                   </div>
                   <div className="ml-3 flex shrink-0 gap-3 text-[11px] text-text-tertiary">
-                    <span title="Downloads">{formatCount(model.downloads)}</span>
-                    <span title="Likes">{formatCount(model.likes)}</span>
+                    <span className="flex items-center gap-0.5" title="Downloads">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      {formatCount(model.downloads)}
+                    </span>
+                    <span className="flex items-center gap-0.5" title="Likes">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                      {formatCount(model.likes)}
+                    </span>
                   </div>
                 </button>
               </li>
@@ -252,10 +278,13 @@ export function ModelSelector() {
           {localConfigs.map((config) => {
             const details = configDetails[config.id]
             const quants = details?.quants ?? ['q4', 'q8', 'fp16', 'fp32'] as Quantization[]
+            const colorIndex = configs.indexOf(config)
+            const color = CONFIG_COLORS[colorIndex % CONFIG_COLORS.length]
             return (
               <div
                 key={config.id}
                 className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-3.5 py-2 text-xs"
+                style={{ borderLeftWidth: '3px', borderLeftColor: color }}
               >
                 {/* Row 1: Name + Controls (per D-04) */}
                 <div className="flex items-center gap-2">
@@ -297,19 +326,15 @@ export function ModelSelector() {
                     </svg>
                   </button>
                 </div>
-                {/* Row 2: Status Info (per D-04) */}
+                {/* Row 2: Status Info */}
                 <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
                   <span>{formatSize(config.estimatedSize ?? 0)}</span>
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${config.cached ? 'bg-success' : 'bg-border'}`}
-                    title={config.cached ? 'Cached' : 'Not cached'}
-                  />
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                    config.backend === 'webgpu'
-                      ? 'bg-webgpu-bg text-primary'
-                      : 'bg-wasm-bg text-wasm'
+                    config.cached
+                      ? 'bg-wasm-bg text-wasm'
+                      : 'bg-bg text-text-tertiary'
                   }`}>
-                    {config.backend}
+                    {config.cached ? 'Cached' : 'Not cached'}
                   </span>
                 </div>
               </div>
@@ -321,10 +346,14 @@ export function ModelSelector() {
       {/* Cloud model chips -- outside accordion for visibility (per D-10) */}
       {cloudConfigs.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
-          {cloudConfigs.map((config) => (
+          {cloudConfigs.map((config) => {
+            const colorIndex = configs.indexOf(config)
+            const color = CONFIG_COLORS[colorIndex % CONFIG_COLORS.length]
+            return (
             <div
               key={config.id}
               className="flex items-center gap-2 rounded-lg border border-dashed border-cloud bg-surface px-3.5 py-2 text-xs"
+              style={{ borderLeftWidth: '3px', borderLeftColor: color, borderLeftStyle: 'solid' }}
             >
               <span className="font-medium text-text-primary">{config.displayName}</span>
               <span className="rounded bg-cloud-bg px-1.5 py-0.5 text-[10px] font-semibold text-cloud">
@@ -344,7 +373,8 @@ export function ModelSelector() {
                 </svg>
               </button>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
