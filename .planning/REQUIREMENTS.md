@@ -116,56 +116,56 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FNDN-01 | — | Pending |
-| FNDN-02 | — | Pending |
-| FNDN-03 | — | Pending |
-| FNDN-04 | — | Pending |
-| MSEL-01 | — | Pending |
-| MSEL-02 | — | Pending |
-| MSEL-03 | — | Pending |
-| MSEL-04 | — | Pending |
-| MSEL-05 | — | Pending |
-| MSEL-06 | — | Pending |
-| MSEL-07 | — | Pending |
-| MSEL-08 | — | Pending |
-| PRMT-01 | — | Pending |
-| PRMT-02 | — | Pending |
-| CTRL-01 | — | Pending |
-| CTRL-02 | — | Pending |
-| CTRL-03 | — | Pending |
-| CTRL-04 | — | Pending |
-| EXEC-01 | — | Pending |
-| EXEC-02 | — | Pending |
-| EXEC-03 | — | Pending |
-| EXEC-04 | — | Pending |
-| EXEC-05 | — | Pending |
-| EXEC-06 | — | Pending |
-| EXEC-07 | — | Pending |
-| EXEC-08 | — | Pending |
-| RSLT-01 | — | Pending |
-| RSLT-02 | — | Pending |
-| RSLT-03 | — | Pending |
-| RSLT-04 | — | Pending |
-| RSLT-05 | — | Pending |
-| RSLT-06 | — | Pending |
-| RSLT-07 | — | Pending |
-| RSLT-08 | — | Pending |
-| RSLT-09 | — | Pending |
-| EXPT-01 | — | Pending |
-| EXPT-02 | — | Pending |
-| EXPT-03 | — | Pending |
-| EXPT-04 | — | Pending |
-| STNV-01 | — | Pending |
-| STNV-02 | — | Pending |
-| STNV-03 | — | Pending |
-| STNV-04 | — | Pending |
-| STNV-05 | — | Pending |
+| FNDN-01 | Phase 1 | Pending |
+| FNDN-02 | Phase 1 | Pending |
+| FNDN-03 | Phase 1 | Pending |
+| FNDN-04 | Phase 1 | Pending |
+| MSEL-01 | Phase 2 | Pending |
+| MSEL-02 | Phase 2 | Pending |
+| MSEL-03 | Phase 2 | Pending |
+| MSEL-04 | Phase 2 | Pending |
+| MSEL-05 | Phase 2 | Pending |
+| MSEL-06 | Phase 2 | Pending |
+| MSEL-07 | Phase 2 | Pending |
+| MSEL-08 | Phase 2 | Pending |
+| PRMT-01 | Phase 3 | Pending |
+| PRMT-02 | Phase 3 | Pending |
+| CTRL-01 | Phase 3 | Pending |
+| CTRL-02 | Phase 3 | Pending |
+| CTRL-03 | Phase 3 | Pending |
+| CTRL-04 | Phase 3 | Pending |
+| EXEC-01 | Phase 4 | Pending |
+| EXEC-02 | Phase 4 | Pending |
+| EXEC-03 | Phase 4 | Pending |
+| EXEC-04 | Phase 4 | Pending |
+| EXEC-05 | Phase 4 | Pending |
+| EXEC-06 | Phase 4 | Pending |
+| EXEC-07 | Phase 4 | Pending |
+| EXEC-08 | Phase 4 | Pending |
+| RSLT-01 | Phase 5 | Pending |
+| RSLT-02 | Phase 5 | Pending |
+| RSLT-03 | Phase 5 | Pending |
+| RSLT-04 | Phase 5 | Pending |
+| RSLT-05 | Phase 5 | Pending |
+| RSLT-06 | Phase 5 | Pending |
+| RSLT-07 | Phase 5 | Pending |
+| RSLT-08 | Phase 5 | Pending |
+| RSLT-09 | Phase 5 | Pending |
+| EXPT-01 | Phase 5 | Pending |
+| EXPT-02 | Phase 5 | Pending |
+| EXPT-03 | Phase 5 | Pending |
+| EXPT-04 | Phase 5 | Pending |
+| STNV-01 | Phase 1 | Pending |
+| STNV-02 | Phase 2 | Pending |
+| STNV-03 | Phase 2 | Pending |
+| STNV-04 | Phase 2 | Pending |
+| STNV-05 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 44 total
-- Mapped to phases: 0
-- Unmapped: 44
+- Mapped to phases: 44
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after initial definition*
+*Last updated: 2026-04-10 after roadmap creation*
