@@ -172,12 +172,11 @@ async function runSingleModel(
 
   const streamer = new TextStreamer(generator.tokenizer, {
     skip_prompt: true,
-    callback_function: (text: string) => {
+    token_callback_function: (_tokens: bigint[]) => {
       if (tokenCount === 0) {
         firstTokenTime = performance.now() - genStart
       }
       tokenCount++
-      streamedText += text
       const elapsed = performance.now() - genStart
       const tokPerSec = tokenCount > 0 ? (tokenCount / (elapsed / 1000)) : 0
 
@@ -185,6 +184,9 @@ async function runSingleModel(
         config, currentIndex, totalModels, 'generating',
         tokenCount, tokPerSec, loadTime + initTime + elapsed, streamedText
       )
+    },
+    callback_function: (text: string) => {
+      streamedText += text
     },
   })
 
@@ -200,8 +202,15 @@ async function runSingleModel(
   })
 
   const totalGenTime = performance.now() - genStart
+
+  // Post-generation: recalculate with tokenizer for definitive accuracy (per D-01)
+  const finalTokenIds = generator.tokenizer.encode(streamedText, {
+    add_special_tokens: false,
+  })
+  const finalTokenCount = Array.isArray(finalTokenIds) ? finalTokenIds.length : tokenCount
+
   const totalTime = loadTime + initTime + totalGenTime
-  const tokensPerSecond = tokenCount > 0 ? (tokenCount / (totalGenTime / 1000)) : 0
+  const tokensPerSecond = finalTokenCount > 0 ? (finalTokenCount / (totalGenTime / 1000)) : 0
 
   // Estimate model size from cache
   let modelSize: number | null = null
@@ -223,7 +232,7 @@ async function runSingleModel(
   }
 
   // Dispose
-  postProgress(config, currentIndex, totalModels, 'disposing', tokenCount, tokensPerSecond, totalTime, streamedText)
+  postProgress(config, currentIndex, totalModels, 'disposing', finalTokenCount, tokensPerSecond, totalTime, streamedText)
   await generator.dispose()
 
   const metrics: TestMetrics = {
@@ -233,7 +242,7 @@ async function runSingleModel(
     ttft: firstTokenTime,
     tokensPerSecond,
     totalTime,
-    tokenCount,
+    tokenCount: finalTokenCount,
   }
 
   return {
