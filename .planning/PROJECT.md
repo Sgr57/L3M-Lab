@@ -12,7 +12,11 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Cross-origin isolation (COOP/COEP) enables SharedArrayBuffer — Validated in Phase 1: Foundation & Critical Fixes
+- [x] Worker format 'es' matches runtime type:'module' instantiation — Validated in Phase 1: Foundation & Critical Fixes
+- [x] Token counting uses tokenizer.encode for accurate metrics — Validated in Phase 1: Foundation & Critical Fixes
+- [x] Navigation bar with WebGPU support badge — Validated in Phase 1: Foundation & Critical Fixes
+- [x] Consistent color coding: purple (#8250df) cloud, blue (#0969da) WebGPU, green (#1a7f37) WASM — Validated in Phase 1: Foundation & Critical Fixes
 
 ### Active
 
@@ -29,9 +33,7 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 - [ ] Sortable comparison table with color-coded rows by model type
 - [ ] Output comparison cards with collapsible full text and star rating
 - [ ] Export results as JSON, CSV, and Markdown
-- [ ] Navigation bar with WebGPU support badge
 - [ ] Settings page for API key management (localStorage persistence)
-- [ ] Consistent color coding: purple (#8250df) cloud, blue (#0969da) WebGPU, green (#1a7f37) WASM
 
 ### Out of Scope
 
@@ -87,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after initialization*
+*Last updated: 2026-04-10 after Phase 1 completion*
