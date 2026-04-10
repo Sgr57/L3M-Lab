@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
-import { searchModels, fetchAvailableQuantizations } from '../../lib/hfSearch'
+import { searchModels, fetchModelDetails } from '../../lib/hfSearch'
+import type { ModelDetails } from '../../lib/hfSearch'
+import { isModelCached } from '../../lib/cacheCheck'
+import { formatSize } from '../../lib/formatSize'
 import { useCompareStore } from '../../stores/useCompareStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import type {
@@ -23,22 +26,23 @@ const CLOUD_MODELS: {
   { provider: 'google', displayName: 'Gemini 2.0 Flash', cloudModel: 'gemini-2.0-flash' },
 ]
 
-// Cache quantizations per model to avoid re-fetching
-const quantCache = new Map<string, Quantization[]>()
+// Module-level cache: modelId -> ModelDetails (replaces quantCache)
+const modelDetailsCache = new Map<string, ModelDetails>()
 
 export function ModelSelector() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<HFModelResult[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  // Track available quantizations per config (loaded on-demand)
-  const [configQuants, setConfigQuants] = useState<Record<string, Quantization[]>>({})
+  // Track model details per config (quantizations + sizes, loaded on-demand)
+  const [configDetails, setConfigDetails] = useState<Record<string, { quants: Quantization[]; sizeByQuant: Record<string, number> }>>({})
   const debouncedQuery = useDebouncedValue(query, 300)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   const configs = useCompareStore((s) => s.configs)
   const addConfig = useCompareStore((s) => s.addConfig)
   const removeConfig = useCompareStore((s) => s.removeConfig)
+  const updateConfig = useCompareStore((s) => s.updateConfig)
   const executionStatus = useCompareStore((s) => s.executionStatus)
 
   const apiKeys = useSettingsStore((s) => s.apiKeys)
@@ -84,15 +88,18 @@ export function ModelSelector() {
   async function handleSelectModel(model: HFModelResult) {
     const defaultBackend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
 
-    // Fetch available quantizations (from cache or API)
-    let quants = quantCache.get(model.modelId)
-    if (!quants) {
-      quants = await fetchAvailableQuantizations(model.modelId)
-      quantCache.set(model.modelId, quants)
+    // Fetch model details (from cache or API)
+    let details = modelDetailsCache.get(model.modelId)
+    if (!details) {
+      details = await fetchModelDetails(model.modelId)
+      modelDetailsCache.set(model.modelId, details)
     }
 
-    // Default to q4 if available, otherwise first available
-    const defaultQuant = quants.includes('q4') ? 'q4' : quants[0]
+    const defaultQuant = details.quantizations.includes('q4') ? 'q4' : details.quantizations[0]
+    const estimatedSize = details.sizeByQuant[defaultQuant] ?? 0
+
+    // Check cache status
+    const cached = await isModelCached(model.modelId, defaultQuant)
 
     const config: TestConfig = {
       id: `${model.modelId}-${defaultQuant}-${defaultBackend}-${Date.now()}`,
@@ -100,11 +107,16 @@ export function ModelSelector() {
       displayName: model.name,
       quantization: defaultQuant,
       backend: defaultBackend,
+      estimatedSize,
+      cached,
     }
     addConfig(config)
 
-    // Store available quants for this config
-    setConfigQuants((prev) => ({ ...prev, [config.id]: quants! }))
+    // Store details for this config's selectors
+    setConfigDetails((prev) => ({
+      ...prev,
+      [config.id]: { quants: details!.quantizations, sizeByQuant: details!.sizeByQuant },
+    }))
 
     setQuery('')
     setResults([])
@@ -124,44 +136,26 @@ export function ModelSelector() {
     addConfig(config)
   }
 
-  function handleQuantChange(configId: string, quantization: Quantization) {
+  async function handleQuantChange(configId: string, quantization: Quantization) {
     const existing = configs.find((c) => c.id === configId)
     if (!existing) return
-    const quants = configQuants[configId]
-    removeConfig(configId)
-    const newConfig = { ...existing, quantization }
-    addConfig(newConfig)
-    // Preserve quant options for the new config ID
-    if (quants) {
-      setConfigQuants((prev) => {
-        const next = { ...prev }
-        delete next[configId]
-        next[newConfig.id] = quants
-        return next
-      })
-    }
+
+    const details = configDetails[configId]
+    const estimatedSize = details?.sizeByQuant[quantization] ?? 0
+
+    // Re-check cache for new quantization (per D-13)
+    const cached = await isModelCached(existing.modelId, quantization)
+
+    updateConfig(configId, { quantization, estimatedSize, cached })
   }
 
   function handleBackendChange(configId: string, backend: Backend) {
-    const existing = configs.find((c) => c.id === configId)
-    if (!existing) return
-    const quants = configQuants[configId]
-    removeConfig(configId)
-    const newConfig = { ...existing, backend }
-    addConfig(newConfig)
-    if (quants) {
-      setConfigQuants((prev) => {
-        const next = { ...prev }
-        delete next[configId]
-        next[newConfig.id] = quants
-        return next
-      })
-    }
+    updateConfig(configId, { backend })
   }
 
   function handleRemoveConfig(configId: string) {
     removeConfig(configId)
-    setConfigQuants((prev) => {
+    setConfigDetails((prev) => {
       const next = { ...prev }
       delete next[configId]
       return next
@@ -230,73 +224,72 @@ export function ModelSelector() {
         )}
       </div>
 
-      {/* Local model chips */}
+      {/* Local model chips (two-row layout per D-04) */}
       {localConfigs.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {localConfigs.map((config) => {
-            const quants = configQuants[config.id] ?? ['q4', 'q8', 'fp16', 'fp32'] as Quantization[]
+            const details = configDetails[config.id]
+            const quants = details?.quants ?? ['q4', 'q8', 'fp16', 'fp32'] as Quantization[]
             return (
               <div
                 key={config.id}
-                className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3.5 py-2 text-xs"
+                className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-3.5 py-2 text-xs"
               >
-                <span className="font-medium text-text-primary">{config.displayName}</span>
-
-                <select
-                  className="rounded border border-border bg-bg px-1.5 py-0.5 text-[11px] font-semibold text-text-primary focus:outline-none"
-                  value={config.quantization}
-                  onChange={(e) => handleQuantChange(config.id, e.target.value as Quantization)}
-                  disabled={disabled}
-                >
-                  {quants.map((q) => (
-                    <option key={q} value={q}>
-                      {q}
-                    </option>
-                  ))}
-                </select>
-
-                <span
-                  className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${
-                    config.backend === 'wasm'
-                      ? 'bg-wasm-bg text-wasm'
-                      : 'bg-webgpu-bg text-primary'
-                  }`}
-                >
-                  {config.quantization}
-                </span>
-
-                <select
-                  className="rounded border border-border bg-bg px-1.5 py-0.5 text-[11px] font-semibold text-text-primary focus:outline-none"
-                  value={config.backend}
-                  onChange={(e) => handleBackendChange(config.id, e.target.value as Backend)}
-                  disabled={disabled}
-                >
-                  {BACKEND_OPTIONS.filter((b) => b !== 'webgpu' || webgpuSupported).map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-
-                <span
-                  className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+                {/* Row 1: Name + Controls (per D-04) */}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-text-primary truncate max-w-[180px]" title={config.modelId}>
+                    {config.displayName}
+                  </span>
+                  <select
+                    className="rounded border border-border bg-bg px-1.5 py-0.5 text-[11px] font-semibold text-text-primary focus:outline-none"
+                    value={config.quantization}
+                    onChange={(e) => handleQuantChange(config.id, e.target.value as Quantization)}
+                    disabled={disabled}
+                  >
+                    {quants.map((q) => (
+                      <option key={q} value={q}>{q}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="rounded border border-border bg-bg px-1.5 py-0.5 text-[11px] font-semibold text-text-primary focus:outline-none"
+                    value={config.backend}
+                    onChange={(e) => handleBackendChange(config.id, e.target.value as Backend)}
+                    disabled={disabled}
+                  >
+                    {BACKEND_OPTIONS.filter((b) => b !== 'webgpu' || webgpuSupported).map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                  {/* Trash icon per D-04 - replaces text "x" */}
+                  <button
+                    type="button"
+                    className="ml-1 text-text-tertiary hover:text-error"
+                    onClick={() => handleRemoveConfig(config.id)}
+                    disabled={disabled}
+                    aria-label={`Remove ${config.displayName}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                </div>
+                {/* Row 2: Status Info (per D-04) */}
+                <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+                  <span>{formatSize(config.estimatedSize ?? 0)}</span>
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${config.cached ? 'bg-success' : 'bg-border'}`}
+                    title={config.cached ? 'Cached' : 'Not cached'}
+                  />
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                     config.backend === 'webgpu'
                       ? 'bg-webgpu-bg text-primary'
                       : 'bg-wasm-bg text-wasm'
-                  }`}
-                >
-                  {config.backend}
-                </span>
-
-                <button
-                  type="button"
-                  className="ml-1 text-text-tertiary hover:text-error"
-                  onClick={() => handleRemoveConfig(config.id)}
-                  disabled={disabled}
-                  aria-label={`Remove ${config.displayName}`}
-                >
-                  x
-                </button>
+                  }`}>
+                    {config.backend}
+                  </span>
+                </div>
               </div>
             )
           })}
