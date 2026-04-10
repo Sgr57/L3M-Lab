@@ -38,19 +38,18 @@ Plans:
 ### Phase 2: Model Selection & Settings
 **Goal**: Users can fully configure which models to test, including local models from HuggingFace and cloud models gated by API keys
 **Depends on**: Phase 1
-**Requirements**: MSEL-01, MSEL-02, MSEL-03, MSEL-04, MSEL-05, MSEL-06, MSEL-07, MSEL-08, STNV-02, STNV-03, STNV-04
+**Requirements**: MSEL-01, MSEL-02, MSEL-04, MSEL-05, MSEL-06, MSEL-07, MSEL-08, STNV-02, STNV-03, STNV-04
 **Success Criteria** (what must be TRUE):
   1. User can search HuggingFace models by name and see autocomplete results showing model ID, pipeline tag, ONNX/transformers.js badges, downloads, and likes
-  2. User can paste a direct model ID (owner/model format) and add it via Enter key with API validation
-  3. Selected models appear as chips with working quantization selector, backend selector (WebGPU/WASM), cache status, download size estimate, and remove button
-  4. Cloud model quick-add buttons appear only when the corresponding API key is present in Settings, and cloud chips are visually distinct (dashed border, purple badge)
-  5. User can configure API keys on the Settings page with show/hide toggle and test-connection button per provider
+  2. Selected models appear as chips with working quantization selector, backend selector (WebGPU/WASM), cache status, download size estimate, and remove button
+  3. Cloud model quick-add buttons appear only when the corresponding API key is present in Settings, and cloud chips are visually distinct (dashed border, purple badge)
+  4. User can configure API keys on the Settings page with show/hide toggle and test-connection button per provider
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Extend types, create data utilities (HF API sizes, Cache API check, formatSize), add updateConfig store action, verify search and settings
-- [ ] 02-02-PLAN.md -- Refactor ModelSelector: two-row local chips with size/cache/trash, cloud accordion with expanded provider lists and custom model ID input
-- [ ] 02-03-PLAN.md -- Build verification and human visual/functional verification of complete Phase 2
+- [x] 02-01-PLAN.md -- Extend types, create data utilities (HF API sizes, Cache API check, formatSize), add updateConfig store action, verify search and settings
+- [x] 02-02-PLAN.md -- Refactor ModelSelector: two-row local chips with size/cache/trash, cloud accordion with expanded provider lists and custom model ID input
+- [x] 02-03-PLAN.md -- Build verification and human visual/functional verification of complete Phase 2
 
 ### Phase 3: Prompt Input & Test Controls
 **Goal**: Users can configure their prompt and generation parameters, then trigger pre-download or comparison runs
