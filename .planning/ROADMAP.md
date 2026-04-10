@@ -45,13 +45,12 @@ Plans:
   3. Selected models appear as chips with working quantization selector, backend selector (WebGPU/WASM), cache status, download size estimate, and remove button
   4. Cloud model quick-add buttons appear only when the corresponding API key is present in Settings, and cloud chips are visually distinct (dashed border, purple badge)
   5. User can configure API keys on the Settings page with show/hide toggle and test-connection button per provider
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- Extend types, create data utilities (HF API sizes, Cache API check, formatSize), add updateConfig store action, verify search and settings
+- [ ] 02-02-PLAN.md -- Refactor ModelSelector: two-row local chips with size/cache/trash, cloud accordion with expanded provider lists and custom model ID input
+- [ ] 02-03-PLAN.md -- Build verification and human visual/functional verification of complete Phase 2
 
 ### Phase 3: Prompt Input & Test Controls
 **Goal**: Users can configure their prompt and generation parameters, then trigger pre-download or comparison runs
