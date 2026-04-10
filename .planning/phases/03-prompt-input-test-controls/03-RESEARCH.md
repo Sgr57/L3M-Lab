@@ -328,22 +328,25 @@ const generator = await pipeline('text-generation', config.modelId, {
 | A2 | ONNX model files cached by transformers.js are backend-agnostic (shared between WASM and WebGPU) | Pitfalls, Pitfall 3 | Medium -- if files differ by backend, pre-downloading with WASM would cause re-download on WebGPU run. However, ONNX is a format standard and models are the same; only runtime differs. |
 | A3 | Worker's pipeline() call is not abortable mid-download | Pitfalls, Pitfall 4 | Low -- worst case, current model finishes downloading before cancel takes effect. Acceptable for POC. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Parameter persistence: move to useSettingsStore or add persist to useCompareStore?**
    - What we know: `useSettingsStore` already persists, `useCompareStore` does not. Parameters are user preferences (like API keys), not run data.
    - What's unclear: Moving parameters changes import paths in PromptInput and TestControls (and workerBridge's startComparison).
    - Recommendation: Move to `useSettingsStore`. The import path changes are minimal and this keeps ephemeral run state clean. **This is a Claude's Discretion item.**
+   - RESOLVED: Parameters moved to `useSettingsStore` with persist middleware. Plan 03-01 Task 1 implements this migration, updating imports in PromptInput and TestControls.
 
 2. **PreDownload visibility with zero local models?**
    - What we know: D-05 says "always visible when local models are selected." What about when NO local models are selected (only cloud)?
    - What's unclear: Should the component hide entirely or show "No local models selected"?
    - Recommendation: Hide entirely when no local models in configs. The section has no purpose without local models. **This is a Claude's Discretion item.**
+   - RESOLVED: PreDownload component returns null when `localConfigs.length === 0`. This is within Claude's Discretion per CONTEXT.md -- the section has no functional purpose without local models.
 
 3. **Download cancel behavior for in-flight pipeline() call?**
    - What we know: The worker checks `cancelled` between models but cannot abort a running `pipeline()` call.
    - What's unclear: Should we attempt to use AbortController (if transformers.js supports it) or accept the current behavior?
    - Recommendation: Accept current behavior for POC scope. The current model finishes, then the loop stops. This is adequate.
+   - RESOLVED: Accepted current behavior for POC scope. Worker checks `cancelled` flag between models; current model finishes before cancel takes effect. Plan 03-01 Task 2 adds `cancelled = false` reset and `if (cancelled) break` in the download loop.
 
 ## Validation Architecture
 
