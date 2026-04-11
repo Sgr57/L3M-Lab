@@ -15,3 +15,4 @@ export type WorkerEvent =
   | { type: 'run-complete'; result: TestResult }
   | { type: 'all-complete' }
   | { type: 'error'; configId?: string; modelName?: string; message: string }
+  | { type: 'device-lost'; message: string }

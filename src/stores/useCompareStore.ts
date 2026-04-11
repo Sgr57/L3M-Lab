@@ -15,6 +15,7 @@ interface CompareState {
   executionStatus: ExecutionStatus
   runProgress: RunProgress | null
   downloadProgress: MultiModelDownloadProgress | null
+  fallbackWarning: string | null
 
   setPrompt: (prompt: string) => void
   addConfig: (config: TestConfig) => void
@@ -24,6 +25,7 @@ interface CompareState {
   setRunProgress: (progress: RunProgress | null) => void
   setDownloadProgress: (progress: MultiModelDownloadProgress | null) => void
   updateModelDownloadStatus: (configId: string, update: Partial<Pick<ModelDownloadStatus, 'status' | 'progress' | 'loaded' | 'total' | 'error'>>) => void
+  setFallbackWarning: (warning: string | null) => void
   addResult: (result: TestResult) => void
   updateRating: (configId: string, rating: number) => void
   reset: () => void
@@ -36,6 +38,7 @@ export const useCompareStore = create<CompareState>()((set) => ({
   executionStatus: 'idle',
   runProgress: null,
   downloadProgress: null,
+  fallbackWarning: null,
 
   setPrompt: (prompt) => set({ prompt }),
 
@@ -72,6 +75,8 @@ export const useCompareStore = create<CompareState>()((set) => ({
       } : null,
     })),
 
+  setFallbackWarning: (warning) => set({ fallbackWarning: warning }),
+
   addResult: (result) =>
     set((state) => ({
       results: [...state.results, result],
@@ -90,5 +95,6 @@ export const useCompareStore = create<CompareState>()((set) => ({
       executionStatus: 'idle',
       runProgress: null,
       downloadProgress: null,
+      fallbackWarning: null,
     }),
 }))

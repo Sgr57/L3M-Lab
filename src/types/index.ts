@@ -1,6 +1,7 @@
 export type Quantization = 'q4' | 'q8' | 'fp16' | 'fp32'
 export type Backend = 'webgpu' | 'wasm' | 'api'
 export type CloudProvider = 'openai' | 'anthropic' | 'google'
+export type CloudErrorCategory = 'cors' | 'auth' | 'rate-limit' | 'timeout' | 'server' | 'unknown'
 
 export type ExecutionStatus =
   | 'idle'
@@ -39,6 +40,10 @@ export interface TestResult {
   rating: number | null
   timestamp: number
   error?: string
+  fallbackBackend?: Backend
+  errorCategory?: CloudErrorCategory
+  errorHint?: string
+  rawError?: string
 }
 
 export interface GenerationParameters {
@@ -73,7 +78,7 @@ export interface RunProgress {
   modelName: string
   currentIndex: number
   totalModels: number
-  phase: 'loading' | 'initializing' | 'generating' | 'disposing'
+  phase: 'loading' | 'initializing' | 'generating' | 'disposing' | 'cloud-pending' | 'cloud-complete'
   tokensGenerated: number
   tokensPerSecond: number
   elapsedMs: number
