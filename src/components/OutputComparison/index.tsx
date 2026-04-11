@@ -151,31 +151,33 @@ export function OutputComparison(): React.JSX.Element | null {
                 </div>
               )}
 
-              {/* Footer: expand toggle, rating, copy */}
-              <div className="mt-2.5 flex items-center justify-between">
-                <button
-                  type="button"
-                  className="text-xs font-medium text-primary hover:underline"
-                  onClick={() => toggleExpand(r.config.id)}
-                >
-                  {isExpanded ? 'Collapse' : 'Expand'}
-                </button>
-
-                <div className="flex items-center gap-3">
-                  <StarRating
-                    value={r.rating}
-                    onChange={(rating) => updateRating(r.config.id, rating)}
-                    size="lg"
-                  />
+              {/* Footer: expand toggle, rating, copy — hidden for errors */}
+              {!r.error && (
+                <div className="mt-2.5 flex items-center justify-between">
                   <button
                     type="button"
-                    className="rounded-md border border-border px-2 py-0.5 text-xs font-medium text-text-secondary hover:border-primary hover:text-primary"
-                    onClick={() => copyOutput(r.output)}
+                    className="text-xs font-medium text-primary hover:underline"
+                    onClick={() => toggleExpand(r.config.id)}
                   >
-                    Copy Output
+                    {isExpanded ? 'Collapse' : 'Expand'}
                   </button>
+
+                  <div className="flex items-center gap-3">
+                    <StarRating
+                      value={r.rating}
+                      onChange={(rating) => updateRating(r.config.id, rating)}
+                      size="lg"
+                    />
+                    <button
+                      type="button"
+                      className="rounded-md border border-border px-2 py-0.5 text-xs font-medium text-text-secondary hover:border-primary hover:text-primary"
+                      onClick={() => copyOutput(r.output)}
+                    >
+                      Copy Output
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )
         })}
