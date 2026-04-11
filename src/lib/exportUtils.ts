@@ -108,10 +108,6 @@ export function downloadFile(content: string, filename: string, mimeType: string
   URL.revokeObjectURL(url)
 }
 
-export function copyToClipboard(text: string): Promise<void> {
-  return navigator.clipboard.writeText(text)
-}
-
 export function buildComparisonRun(
   prompt: string,
   parameters: ComparisonRun['parameters'],

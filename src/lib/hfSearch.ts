@@ -46,28 +46,6 @@ export async function searchModels(query: string): Promise<HFModelResult[]> {
   }))
 }
 
-/**
- * Fetch the actual ONNX files for a model and extract available quantizations.
- * Calls the model detail API which returns all files (siblings).
- */
-export async function fetchAvailableQuantizations(modelId: string): Promise<Quantization[]> {
-  try {
-    const res = await fetch(`${HF_API}/${modelId}`)
-    if (!res.ok) return ['fp32']
-
-    const data = await res.json()
-    const siblings: Array<{ rfilename: string }> = data.siblings ?? []
-
-    const onnxFiles = siblings
-      .map((s) => s.rfilename)
-      .filter((f) => f.endsWith('.onnx'))
-
-    return extractQuantizations(onnxFiles)
-  } catch {
-    return ['fp32']
-  }
-}
-
 export interface ModelDetails {
   quantizations: Quantization[]
   sizeByQuant: Record<string, number>  // keyed by Quantization value, value in bytes
