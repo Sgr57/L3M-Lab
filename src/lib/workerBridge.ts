@@ -42,10 +42,27 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
       break
     }
 
-    case 'download-complete':
+    case 'download-complete': {
+      // Mark all successfully downloaded models as cached in configs
+      const dp = store.downloadProgress
+      if (dp) {
+        for (const model of dp.models) {
+          if (model.status === 'complete') {
+            store.updateConfig(model.configId, { cached: true })
+          }
+        }
+      }
       store.setExecutionStatus('idle')
       store.setDownloadProgress(null)
+
+      // Terminate worker after download to clean up WASM/ONNX runtime state.
+      // A fresh worker is created on the next operation.
+      if (worker) {
+        worker.terminate()
+        worker = null
+      }
       break
+    }
 
     case 'run-started':
       store.setRunProgress({

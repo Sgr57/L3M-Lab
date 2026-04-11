@@ -102,16 +102,13 @@ export function PreDownload(): React.ReactElement | null {
 
               {/* Progress bar or status text */}
               <div className="flex-1">
-                {model.status === 'downloading' && (
+                {(model.status === 'downloading' || model.status === 'complete') && (
                   <div className="h-1.5 w-full rounded-full bg-border-light overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-primary transition-all duration-200"
-                      style={{ width: `${Math.min(model.progress, 100)}%` }}
+                      className={`h-full rounded-full transition-all duration-200 ${model.status === 'complete' ? 'bg-success' : 'bg-primary'}`}
+                      style={{ width: `${model.status === 'complete' ? 100 : Math.min(model.progress, 100)}%` }}
                     />
                   </div>
-                )}
-                {model.status === 'complete' && (
-                  <span className="text-success">Done</span>
                 )}
                 {model.status === 'waiting' && (
                   <span className="text-text-tertiary">Waiting</span>
@@ -121,12 +118,13 @@ export function PreDownload(): React.ReactElement | null {
                 )}
               </div>
 
-              {/* Percentage for active download */}
-              {model.status === 'downloading' && (
-                <span className="w-10 text-right text-text-secondary">
-                  {Math.round(model.progress)}%
-                </span>
-              )}
+              {/* Percentage or Done label */}
+              <span className="w-12 text-right text-text-secondary text-[11px]">
+                {model.status === 'downloading' && `${Math.round(model.progress)}%`}
+                {model.status === 'complete' && <span className="text-success">Done</span>}
+                {model.status === 'waiting' && ''}
+                {model.status === 'error' && ''}
+              </span>
             </div>
           ))}
         </div>
