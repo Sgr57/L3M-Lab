@@ -78,13 +78,13 @@ Plans:
   3. Streaming text output is visible in real-time during generation
   4. WebGPU device loss is detected and remaining models automatically fall back to WASM
   5. Cloud models execute via direct API calls with TTFT/tok/s/total time measured; CORS errors are distinguished from auth errors with clear messaging
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md -- Types, store extensions, CloudApiError class, classifyCloudError utility
+- [ ] 04-02-PLAN.md -- Worker device loss detection, WASM fallback, inter-model delay, workerBridge cloud progress and error classification
+- [ ] 04-03-PLAN.md -- Weighted progress bar, cloud timer, FallbackBanner, enhanced error cards, ComparePage wiring
 
 ### Phase 5: Results & Export
 **Goal**: Users can analyze benchmark results through summary stats, charts, sortable tables, and output comparisons -- and export everything
