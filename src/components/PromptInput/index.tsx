@@ -24,24 +24,25 @@ export function PromptInput() {
         onChange={(e) => setPrompt(e.target.value)}
         disabled={disabled}
       />
-      <button
-        type="button"
-        className="mt-3 flex w-full items-center justify-between rounded-lg border border-border-light bg-bg px-3 py-2 text-xs text-text-secondary hover:bg-surface"
-        onClick={() => setParamsOpen(!paramsOpen)}
-      >
-        <span>
-          Parameters (temp {parameters.temperature}, tokens {parameters.maxTokens}, top-p {parameters.topP}, penalty {parameters.repeatPenalty})
-        </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          className={`transition-transform ${paramsOpen ? 'rotate-180' : ''}`}
+      <div className="mt-3 rounded-lg border border-border">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-text-secondary"
+          onClick={() => setParamsOpen(!paramsOpen)}
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+          <span>
+            Parameters (temp {parameters.temperature}, tokens {parameters.maxTokens}, top-p {parameters.topP}, penalty {parameters.repeatPenalty})
+          </span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={`transition-transform ${paramsOpen ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
       {paramsOpen && (
-        <div className="mt-2 flex gap-5 text-xs text-text-secondary">
+        <div className="border-t border-border px-4 pb-3 pt-2 flex gap-5 text-xs text-text-secondary">
           <ParamInput
             label="Temperature"
             value={parameters.temperature}
@@ -80,6 +81,7 @@ export function PromptInput() {
           />
         </div>
       )}
+      </div>
     </div>
   )
 }

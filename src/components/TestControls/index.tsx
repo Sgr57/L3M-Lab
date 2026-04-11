@@ -1,7 +1,6 @@
 import { useCompareStore } from '../../stores/useCompareStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import { startComparison, cancelExecution } from '../../lib/workerBridge'
-import { formatSize } from '../../lib/formatSize'
 
 export function TestControls(): React.ReactElement {
   const prompt = useCompareStore((s) => s.prompt)
@@ -13,17 +12,28 @@ export function TestControls(): React.ReactElement {
   const hasConfigs = configs.length > 0
   const hasPrompt = prompt.trim().length > 0
 
-  // Calculate estimated download from real estimatedSize bytes (per D-10)
-  const totalDownloadSize = configs
-    .filter((c) => c.backend !== 'api' && !c.cached)
-    .reduce((acc, c) => acc + (c.estimatedSize ?? 0), 0)
+  // Check if any local model still needs downloading
+  const uncachedLocalModels = configs.filter((c) => c.backend !== 'api' && !c.cached)
+  const hasUncachedModels = uncachedLocalModels.length > 0
+
+  const canRun = !isBusy && hasConfigs && hasPrompt && !hasUncachedModels
+
+  // Determine why the button is disabled
+  let disabledReason = ''
+  if (isBusy) disabledReason = 'Execution in progress...'
+  else if (!hasConfigs) disabledReason = 'Select at least one model'
+  else if (!hasPrompt) disabledReason = 'Enter a prompt'
+  else if (hasUncachedModels) disabledReason = `${uncachedLocalModels.length} model${uncachedLocalModels.length !== 1 ? 's' : ''} not downloaded yet`
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-xs text-text-secondary">
-        {configs.length} model{configs.length !== 1 ? 's' : ''} selected
-        {totalDownloadSize > 0 ? ` \u00b7 Est. download: ${formatSize(totalDownloadSize)}` : ''}
-      </span>
+      {disabledReason ? (
+        <span className="text-xs text-text-tertiary">{disabledReason}</span>
+      ) : (
+        <span className="text-xs text-text-secondary">
+          {configs.length} model{configs.length !== 1 ? 's' : ''} ready
+        </span>
+      )}
 
       <div className="flex items-center gap-3">
         {isBusy && (
@@ -39,8 +49,9 @@ export function TestControls(): React.ReactElement {
         <button
           type="button"
           className="bg-primary text-white rounded-lg px-6 py-2.5 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={isBusy || !hasConfigs || !hasPrompt}
+          disabled={!canRun}
           onClick={() => startComparison(prompt, parameters, configs)}
+          title={disabledReason || undefined}
         >
           Run Comparison
         </button>

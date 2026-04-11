@@ -18,38 +18,10 @@ function formatElapsed(ms: number): string {
 
 export function TestProgress() {
   const runProgress = useCompareStore((s) => s.runProgress)
-  const downloadProgress = useCompareStore((s) => s.downloadProgress)
   const status = useCompareStore((s) => s.executionStatus)
 
-  if (status === 'downloading' && downloadProgress) {
-    const currentModel = downloadProgress.models[downloadProgress.currentIndex]
-    const pct = currentModel && currentModel.total > 0
-      ? Math.round((currentModel.loaded / currentModel.total) * 100)
-      : currentModel ? Math.round(currentModel.progress) : 0
-    const modelName = currentModel?.modelName ?? 'model'
-    const completedCount = downloadProgress.models.filter((m) => m.status === 'complete').length
-    const totalCount = downloadProgress.models.length
-
-    return (
-      <div className="rounded-xl border border-border border-l-[3px] border-l-warning bg-surface p-5">
-        <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold text-text-primary">
-            Downloading {modelName}
-            <span className="ml-1 text-text-tertiary">({completedCount + 1}/{totalCount})</span>
-          </span>
-          <span className="text-text-secondary">{pct}%</span>
-        </div>
-        <div className="bg-border-light rounded-md h-2 overflow-hidden">
-          <div
-            className="bg-gradient-to-r from-primary to-[#218bff] h-full rounded-md transition-all duration-300"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  if (!runProgress) return null
+  // Download progress is shown exclusively in the PreDownload component
+  if (status === 'downloading' || !runProgress) return null
 
   const {
     modelName,
