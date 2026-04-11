@@ -1,12 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useCompareStore } from '../../stores/useCompareStore'
-import type { Backend } from '../../types'
-
-const BORDER_COLORS: Record<Backend, string> = {
-  api: '#8250df',
-  webgpu: '#0969da',
-  wasm: '#1a7f37',
-}
+import { getModelColor } from '../../lib/modelColors'
+import { getDisambiguatedLabels } from '../../lib/disambiguate'
+import { TypeBadge } from '../shared/TypeBadge'
+import { StarRating } from '../shared/StarRating'
 
 const INITIAL_VISIBLE = 3
 
@@ -19,20 +16,23 @@ const ERROR_CATEGORY_LABELS: Record<string, string> = {
   unknown: 'Unknown Error',
 }
 
-export function OutputComparison() {
+export function OutputComparison(): React.JSX.Element | null {
   const results = useCompareStore((s) => s.results)
+  const configs = useCompareStore((s) => s.configs)
   const updateRating = useCompareStore((s) => s.updateRating)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showAll, setShowAll] = useState(false)
   const [rawErrorExpanded, setRawErrorExpanded] = useState<Set<string>>(new Set())
 
+  const labels = useMemo(() => getDisambiguatedLabels(configs), [configs])
+
   if (results.length === 0) return null
 
   const visibleResults = showAll ? results : results.slice(0, INITIAL_VISIBLE)
   const hiddenCount = results.length - INITIAL_VISIBLE
 
-  const toggleExpand = (configId: string) => {
+  const toggleExpand = (configId: string): void => {
     setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(configId)) {
@@ -61,7 +61,7 @@ export function OutputComparison() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="rounded-xl border border-border bg-surface p-6">
       <div className="mb-3 flex items-center justify-between">
         <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Model Outputs
@@ -69,7 +69,7 @@ export function OutputComparison() {
         <div className="flex gap-1 rounded-lg border border-border p-0.5">
           <button
             type="button"
-            className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
+            className={`rounded-md px-2.5 py-1 text-xs font-medium ${
               viewMode === 'list'
                 ? 'bg-webgpu-bg text-primary'
                 : 'text-text-secondary hover:text-text-primary'
@@ -80,7 +80,7 @@ export function OutputComparison() {
           </button>
           <button
             type="button"
-            className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
+            className={`rounded-md px-2.5 py-1 text-xs font-medium ${
               viewMode === 'grid'
                 ? 'bg-webgpu-bg text-primary'
                 : 'text-text-secondary hover:text-text-primary'
@@ -103,25 +103,25 @@ export function OutputComparison() {
               className={`rounded-xl border p-3.5 border-l-[3px] ${
                 r.error ? 'border-error/30 bg-error/5' : 'border-border'
               }`}
-              style={{ borderLeftColor: r.error ? '#cf222e' : BORDER_COLORS[r.config.backend] }}
+              style={{ borderLeftColor: r.error ? '#cf222e' : getModelColor(configs, r.config.id) }}
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-text-primary">
-                    {r.config.displayName}
+                    {labels.get(r.config.id) ?? r.config.displayName}
                   </span>
                   <TypeBadge type={type} backend={r.config.backend} />
-                  <span className="text-[11px] text-text-tertiary">
+                  <span className="text-xs text-text-tertiary">
                     {r.config.backend} / {r.config.quantization.toUpperCase()}
                   </span>
                   {r.fallbackBackend && (
-                    <span className="text-[11px] text-warning font-medium">
+                    <span className="text-xs text-warning font-semibold">
                       WebGPU &rarr; WASM
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-[11px] text-text-secondary">
+                <div className="flex items-center gap-3 text-xs text-text-secondary">
                   <span>{r.metrics.tokensPerSecond.toFixed(1)} tok/s</span>
                   <span>{r.metrics.tokenCount} tokens</span>
                   <span>{formatTime(r.metrics.totalTime)}</span>
@@ -135,29 +135,29 @@ export function OutputComparison() {
                   <div className="rounded-lg border border-error/20 bg-error/5 p-3">
                     <div className="flex items-center gap-2 mb-1.5">
                       {r.errorCategory ? (
-                        <span className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-error/10 text-error">
+                        <span className="rounded-md px-1.5 py-0.5 text-xs font-semibold bg-error/10 text-error">
                           {ERROR_CATEGORY_LABELS[r.errorCategory] ?? 'Error'}
                         </span>
                       ) : (
-                        <span className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-error/10 text-error">
+                        <span className="rounded-md px-1.5 py-0.5 text-xs font-semibold bg-error/10 text-error">
                           Error
                         </span>
                       )}
                     </div>
-                    <p className="text-[13px] text-text-secondary">{r.errorHint ?? r.error}</p>
+                    <p className="text-sm text-text-secondary">{r.errorHint ?? r.error}</p>
                   </div>
                   {/* Collapsible raw error */}
                   {r.rawError && (
                     <div>
                       <button
                         type="button"
-                        className="text-[11px] font-medium text-primary hover:underline"
+                        className="text-xs font-medium text-primary hover:underline"
                         onClick={() => toggleRawError(r.config.id)}
                       >
                         {rawErrorExpanded.has(r.config.id) ? 'Hide raw error' : 'Show raw error'}
                       </button>
                       {rawErrorExpanded.has(r.config.id) && (
-                        <div className="mt-1.5 rounded-lg bg-bg border border-border p-3 text-[13px] font-mono text-text-secondary break-words">
+                        <div className="mt-1.5 rounded-lg bg-bg border border-border p-3 text-sm font-mono text-text-secondary break-words">
                           {r.rawError}
                         </div>
                       )}
@@ -166,7 +166,7 @@ export function OutputComparison() {
                 </div>
               ) : (
                 <div
-                  className={`mt-2.5 text-[13px] leading-relaxed text-text-primary ${
+                  className={`mt-2.5 text-sm leading-relaxed text-text-primary ${
                     isExpanded ? '' : 'max-h-20 overflow-hidden'
                   }`}
                 >
@@ -178,7 +178,7 @@ export function OutputComparison() {
               <div className="mt-2.5 flex items-center justify-between">
                 <button
                   type="button"
-                  className="text-[11px] font-medium text-primary hover:underline"
+                  className="text-xs font-medium text-primary hover:underline"
                   onClick={() => toggleExpand(r.config.id)}
                 >
                   {isExpanded ? 'Collapse' : 'Expand'}
@@ -188,13 +188,14 @@ export function OutputComparison() {
                   <StarRating
                     value={r.rating}
                     onChange={(rating) => updateRating(r.config.id, rating)}
+                    size="lg"
                   />
                   <button
                     type="button"
-                    className="rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-text-secondary hover:border-primary hover:text-primary"
+                    className="rounded-md border border-border px-2 py-0.5 text-xs font-medium text-text-secondary hover:border-primary hover:text-primary"
                     onClick={() => copyOutput(r.output)}
                   >
-                    Copy
+                    Copy Output
                   </button>
                 </div>
               </div>
@@ -206,7 +207,7 @@ export function OutputComparison() {
       {!showAll && hiddenCount > 0 && (
         <button
           type="button"
-          className="mt-3 w-full rounded-lg border border-border py-2 text-xs font-medium text-text-secondary hover:border-primary hover:text-primary"
+          className="mt-3 w-full rounded-lg border border-border py-2 text-xs font-semibold text-text-secondary hover:border-primary hover:text-primary"
           onClick={() => setShowAll(true)}
         >
           Show {hiddenCount} more
@@ -216,7 +217,7 @@ export function OutputComparison() {
       {showAll && hiddenCount > 0 && (
         <button
           type="button"
-          className="mt-3 w-full rounded-lg border border-border py-2 text-xs font-medium text-text-secondary hover:border-primary hover:text-primary"
+          className="mt-3 w-full rounded-lg border border-border py-2 text-xs font-semibold text-text-secondary hover:border-primary hover:text-primary"
           onClick={() => setShowAll(false)}
         >
           Show less
@@ -229,45 +230,4 @@ export function OutputComparison() {
 function formatTime(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)} ms`
   return `${(ms / 1000).toFixed(2)} s`
-}
-
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number | null
-  onChange: (rating: number) => void
-}) {
-  return (
-    <span className="inline-flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`cursor-pointer text-lg leading-none ${
-            value !== null && star <= value
-              ? 'text-star-filled'
-              : 'text-star-empty'
-          }`}
-          onClick={() => onChange(star)}
-        >
-          ★
-        </span>
-      ))}
-    </span>
-  )
-}
-
-function TypeBadge({ type, backend }: { type: string; backend: Backend }) {
-  const cls =
-    type === 'cloud'
-      ? 'bg-cloud-bg text-cloud'
-      : backend === 'wasm'
-        ? 'bg-wasm-bg text-wasm'
-        : 'bg-webgpu-bg text-primary'
-
-  return (
-    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>
-      {type === 'cloud' ? 'cloud' : backend === 'wasm' ? 'local-wasm' : 'local'}
-    </span>
-  )
 }
