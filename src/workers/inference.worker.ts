@@ -3,9 +3,45 @@ import type { WorkerCommand, WorkerEvent } from '../types/worker-messages'
 import type { TestConfig, GenerationParameters, TestResult, TestMetrics } from '../types'
 
 let cancelled = false
+let gpuDeviceLost = false
 
 function post(event: WorkerEvent) {
   self.postMessage(event)
+}
+
+async function attachDeviceLostHandler(): Promise<void> {
+  try {
+    // Access ONNX Runtime's GPU device after first WebGPU session creation
+    // env.backends.onnx.webgpu.device is a Promise that resolves to the GPUDevice
+    const { env } = await import('@huggingface/transformers')
+    const device = await env.backends.onnx.webgpu.device
+    if (device) {
+      device.lost.then((info: GPUDeviceLostInfo) => {
+        // 'destroyed' means intentional cleanup, not a failure
+        if (info.reason !== 'destroyed') {
+          gpuDeviceLost = true
+          post({
+            type: 'device-lost',
+            message: `WebGPU device lost: ${info.message}`,
+          })
+        }
+      })
+    }
+  } catch {
+    // If we can't access the device, rely on try/catch detection only
+  }
+}
+
+function isDeviceLostError(err: unknown): boolean {
+  if (gpuDeviceLost) return true
+  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase()
+  return (
+    msg.includes('device lost') ||
+    msg.includes('device hung') ||
+    msg.includes('dxgi_error') ||
+    msg.includes('gpu device') ||
+    msg.includes('context lost')
+  )
 }
 
 self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
@@ -105,6 +141,7 @@ async function handleRun(
 ) {
   const localConfigs = configs.filter((c) => c.backend !== 'api')
   const total = localConfigs.length
+  gpuDeviceLost = false  // Reset GPU state for new run
 
   for (let i = 0; i < localConfigs.length; i++) {
     if (cancelled) break
@@ -141,6 +178,12 @@ async function handleRun(
       }
       post({ type: 'run-complete', result: errorResult })
     }
+
+    // GPU memory safety: small delay between dispose and next model load
+    // Gives GPU driver time to reclaim memory (per D-07, RESEARCH.md)
+    if (i < localConfigs.length - 1) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 50))
+    }
   }
 
   if (!cancelled) {
@@ -155,22 +198,71 @@ async function runSingleModel(
   currentIndex: number,
   totalModels: number
 ): Promise<TestResult> {
+  let effectiveBackend = config.backend as 'webgpu' | 'wasm'
+  let fallbackBackend: string | undefined
+
+  // If GPU was previously lost in this run, force WASM for any WebGPU model
+  if (gpuDeviceLost && effectiveBackend === 'webgpu') {
+    effectiveBackend = 'wasm'
+    fallbackBackend = 'wasm'
+  }
+
+  try {
+    const result = await executeModel(config, prompt, params, currentIndex, totalModels, effectiveBackend)
+    if (fallbackBackend) {
+      result.fallbackBackend = 'wasm'
+    }
+    return result
+  } catch (err) {
+    // If this was a WebGPU model and the error is device loss, retry on WASM
+    if (effectiveBackend === 'webgpu' && isDeviceLostError(err)) {
+      gpuDeviceLost = true
+      post({
+        type: 'device-lost',
+        message: 'WebGPU device lost -- switching remaining models to WASM',
+      })
+
+      // Retry the failed model on WASM
+      try {
+        const result = await executeModel(config, prompt, params, currentIndex, totalModels, 'wasm')
+        result.fallbackBackend = 'wasm'
+        return result
+      } catch (retryErr) {
+        // WASM also failed -- propagate the retry error
+        throw retryErr
+      }
+    }
+    throw err
+  }
+}
+
+async function executeModel(
+  config: TestConfig,
+  prompt: string,
+  params: GenerationParameters,
+  currentIndex: number,
+  totalModels: number,
+  backend: 'webgpu' | 'wasm'
+): Promise<TestResult> {
   // Phase: Loading
   postProgress(config, currentIndex, totalModels, 'loading', 0, 0, 0, '')
   const loadStart = performance.now()
 
   const generator = await pipeline('text-generation', config.modelId, {
     dtype: config.quantization as 'q4' | 'q8' | 'fp16' | 'fp32',
-    device: config.backend as 'webgpu' | 'wasm',
+    device: backend,
   }) as TextGenerationPipeline
 
   const loadTime = performance.now() - loadStart
 
-  // Phase: Initializing
+  // Attach device lost handler after first WebGPU pipeline load
+  if (backend === 'webgpu') {
+    await attachDeviceLostHandler()
+  }
+
+  // Phase: Initializing (warm-up)
   postProgress(config, currentIndex, totalModels, 'initializing', 0, 0, loadTime, '')
   const initStart = performance.now()
-
-  // Warm-up with a short generation
   await generator('test', { max_new_tokens: 1 })
   const initTime = performance.now() - initStart
 
@@ -213,7 +305,7 @@ async function runSingleModel(
 
   const totalGenTime = performance.now() - genStart
 
-  // Post-generation: recalculate with tokenizer for definitive accuracy (per D-01)
+  // Post-generation: definitive token count via tokenizer (per FNDN-03)
   const finalTokenIds = generator.tokenizer.encode(streamedText, {
     add_special_tokens: false,
   })
@@ -243,7 +335,11 @@ async function runSingleModel(
 
   // Dispose
   postProgress(config, currentIndex, totalModels, 'disposing', finalTokenCount, tokensPerSecond, totalTime, streamedText)
-  await generator.dispose()
+  try {
+    await generator.dispose()
+  } catch {
+    // Dispose may fail after device loss -- that's OK, we're cleaning up
+  }
 
   const metrics: TestMetrics = {
     modelSize,
@@ -268,7 +364,7 @@ function postProgress(
   config: TestConfig,
   currentIndex: number,
   totalModels: number,
-  phase: 'loading' | 'initializing' | 'generating' | 'disposing',
+  phase: 'loading' | 'initializing' | 'generating' | 'disposing' | 'cloud-pending' | 'cloud-complete',
   tokensGenerated: number,
   tokensPerSecond: number,
   elapsedMs: number,
