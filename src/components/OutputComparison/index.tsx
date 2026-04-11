@@ -10,12 +10,22 @@ const BORDER_COLORS: Record<Backend, string> = {
 
 const INITIAL_VISIBLE = 3
 
+const ERROR_CATEGORY_LABELS: Record<string, string> = {
+  cors: 'CORS Blocked',
+  auth: 'Auth Failed',
+  'rate-limit': 'Rate Limited',
+  timeout: 'Timeout',
+  server: 'Server Error',
+  unknown: 'Unknown Error',
+}
+
 export function OutputComparison() {
   const results = useCompareStore((s) => s.results)
   const updateRating = useCompareStore((s) => s.updateRating)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showAll, setShowAll] = useState(false)
+  const [rawErrorExpanded, setRawErrorExpanded] = useState<Set<string>>(new Set())
 
   if (results.length === 0) return null
 
@@ -34,7 +44,19 @@ export function OutputComparison() {
     })
   }
 
-  const copyOutput = async (text: string) => {
+  const toggleRawError = (configId: string): void => {
+    setRawErrorExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(configId)) {
+        next.delete(configId)
+      } else {
+        next.add(configId)
+      }
+      return next
+    })
+  }
+
+  const copyOutput = async (text: string): Promise<void> => {
     await navigator.clipboard.writeText(text)
   }
 
@@ -78,8 +100,10 @@ export function OutputComparison() {
           return (
             <div
               key={`${r.config.id}-${idx}`}
-              className="rounded-xl border border-border p-3.5 border-l-[3px]"
-              style={{ borderLeftColor: BORDER_COLORS[r.config.backend] }}
+              className={`rounded-xl border p-3.5 border-l-[3px] ${
+                r.error ? 'border-error/30 bg-error/5' : 'border-border'
+              }`}
+              style={{ borderLeftColor: r.error ? '#cf222e' : BORDER_COLORS[r.config.backend] }}
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3">
@@ -91,6 +115,11 @@ export function OutputComparison() {
                   <span className="text-[11px] text-text-tertiary">
                     {r.config.backend} / {r.config.quantization.toUpperCase()}
                   </span>
+                  {r.fallbackBackend && (
+                    <span className="text-[11px] text-warning font-medium">
+                      WebGPU &rarr; WASM
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-[11px] text-text-secondary">
                   <span>{r.metrics.tokensPerSecond.toFixed(1)} tok/s</span>
@@ -101,8 +130,39 @@ export function OutputComparison() {
 
               {/* Output text or error */}
               {r.error ? (
-                <div className="mt-2.5 rounded-lg border border-error/20 bg-error/5 p-3 text-[13px] text-error">
-                  <span className="font-semibold">Error: </span>{r.error}
+                <div className="mt-2.5 space-y-2">
+                  {/* Error category badge + hint */}
+                  <div className="rounded-lg border border-error/20 bg-error/5 p-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {r.errorCategory ? (
+                        <span className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-error/10 text-error">
+                          {ERROR_CATEGORY_LABELS[r.errorCategory] ?? 'Error'}
+                        </span>
+                      ) : (
+                        <span className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-error/10 text-error">
+                          Error
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[13px] text-text-secondary">{r.errorHint ?? r.error}</p>
+                  </div>
+                  {/* Collapsible raw error */}
+                  {r.rawError && (
+                    <div>
+                      <button
+                        type="button"
+                        className="text-[11px] font-medium text-primary hover:underline"
+                        onClick={() => toggleRawError(r.config.id)}
+                      >
+                        {rawErrorExpanded.has(r.config.id) ? 'Hide raw error' : 'Show raw error'}
+                      </button>
+                      {rawErrorExpanded.has(r.config.id) && (
+                        <div className="mt-1.5 rounded-lg bg-bg border border-border p-3 text-[13px] font-mono text-text-secondary break-words">
+                          {r.rawError}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div
