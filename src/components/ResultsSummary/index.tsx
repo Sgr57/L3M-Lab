@@ -17,17 +17,18 @@ function formatTotalTime(results: TestResult[]) {
 
 export function ResultsSummary() {
   const results = useCompareStore((s) => s.results)
+  const successfulResults = results.filter((r) => !r.error)
 
-  if (results.length === 0) return null
+  if (successfulResults.length === 0) return null
 
-  const modelsCount = results.length
-  const totalTime = formatTotalTime(results)
+  const modelsCount = successfulResults.length
+  const totalTime = formatTotalTime(successfulResults)
 
-  const fastestOverall = findFastest(results)
-  const fastestLocal = findFastest(results, (r) => r.config.backend !== 'api')
+  const fastestOverall = findFastest(successfulResults)
+  const fastestLocal = findFastest(successfulResults, (r) => r.config.backend !== 'api')
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 gap-4">
       <StatCard value={String(modelsCount)} label="Models tested" />
       <StatCard value={totalTime} label="Total time" />
       <StatCard
@@ -61,8 +62,8 @@ export function ResultsSummary() {
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4 text-center">
-      <div className="text-[28px] font-bold text-primary">{value}</div>
-      <div className="text-[11px] text-text-secondary mt-0.5">{label}</div>
+      <div className="text-[28px] font-semibold text-primary">{value}</div>
+      <div className="text-xs text-text-secondary mt-1">{label}</div>
     </div>
   )
 }
