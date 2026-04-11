@@ -124,10 +124,15 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
 
 export function startDownload(configs: TestConfig[]) {
   const store = useCompareStore.getState()
-  const localConfigs = configs.filter((c) => c.backend !== 'api')
+  // Only download uncached local models — cached models already have files
+  // in the Cache API and don't need pipeline() (which would fail for some
+  // quantized ops not supported in WASM)
+  const uncachedLocal = configs.filter((c) => c.backend !== 'api' && !c.cached)
+
+  if (uncachedLocal.length === 0) return
 
   // Initialize multi-model download progress
-  const models: ModelDownloadStatus[] = localConfigs.map((c) => ({
+  const models: ModelDownloadStatus[] = uncachedLocal.map((c) => ({
     configId: c.id,
     modelName: c.displayName,
     status: 'waiting' as const,
@@ -139,7 +144,7 @@ export function startDownload(configs: TestConfig[]) {
   store.setDownloadProgress({ models, currentIndex: 0 })
   store.setExecutionStatus('downloading')
 
-  const cmd: WorkerCommand = { type: 'download', configs: localConfigs }
+  const cmd: WorkerCommand = { type: 'download', configs: uncachedLocal }
   getWorker().postMessage(cmd)
 }
 

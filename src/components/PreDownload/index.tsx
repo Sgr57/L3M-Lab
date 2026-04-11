@@ -105,7 +105,7 @@ export function PreDownload(): React.ReactElement | null {
                 {(model.status === 'downloading' || model.status === 'complete') && (
                   <div className="h-1.5 w-full rounded-full bg-border-light overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-200 ${model.status === 'complete' ? 'bg-success' : 'bg-primary'}`}
+                      className={`h-full ${model.status === 'complete' ? 'bg-success' : 'bg-primary'}`}
                       style={{ width: `${model.status === 'complete' ? 100 : Math.min(model.progress, 100)}%` }}
                     />
                   </div>
