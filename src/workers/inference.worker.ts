@@ -53,16 +53,20 @@ async function handleDownload(configs: TestConfig[]) {
         dtype: config.quantization as 'q4' | 'q8' | 'fp16' | 'fp32',
         device: 'wasm',
         progress_callback: (progress: Record<string, unknown>) => {
-          post({
-            type: 'download-progress',
-            data: {
-              configId: config.id,
-              modelName: config.displayName,
-              progress: (progress.progress as number) ?? 0,
-              loaded: (progress.loaded as number) ?? 0,
-              total: (progress.total as number) ?? 0,
-            },
-          })
+          // Use 'progress_total' events for aggregate progress across all model shards.
+          // Per-file 'progress' events reset for each shard and produce jumpy progress bars.
+          if (progress.status === 'progress_total') {
+            post({
+              type: 'download-progress',
+              data: {
+                configId: config.id,
+                modelName: config.displayName,
+                progress: (progress.progress as number) ?? 0,
+                loaded: (progress.loaded as number) ?? 0,
+                total: (progress.total as number) ?? 0,
+              },
+            })
+          }
         },
       })
 

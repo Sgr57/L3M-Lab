@@ -229,6 +229,12 @@ export function cancelExecution() {
   store.setRunProgress(null)
   store.setDownloadProgress(null)
 
-  const cmd: WorkerCommand = { type: 'cancel' }
-  getWorker().postMessage(cmd)
+  // Terminate the worker to force-stop downloads/runs.
+  // pipeline() is not abortable, so posting 'cancel' only works between models.
+  // Terminating ensures the WASM/ONNX runtime is fully cleaned up — a fresh
+  // worker is created on the next startDownload/startComparison call.
+  if (worker) {
+    worker.terminate()
+    worker = null
+  }
 }
