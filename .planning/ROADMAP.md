@@ -65,8 +65,8 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01-PLAN.md -- Types, stores, collapsible PromptInput, worker WASM override, workerBridge multi-model progress
-- [ ] 03-02-PLAN.md -- PreDownload component with serial progress, simplified TestControls, ComparePage layout update
+- [x] 03-01-PLAN.md -- Types, stores, collapsible PromptInput, worker WASM override, workerBridge multi-model progress
+- [x] 03-02-PLAN.md -- PreDownload component with serial progress, simplified TestControls, ComparePage layout update
 
 ### Phase 4: Execution Engine & Progress
 **Goal**: Sequential model execution is stable, observable, and handles failure gracefully -- users see live progress and streaming output for every model run
