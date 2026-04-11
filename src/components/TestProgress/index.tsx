@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCompareStore } from '../../stores/useCompareStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
-import type { RunProgress } from '../../types'
+import type { Backend, RunProgress } from '../../types'
+import { BackendBadge } from '../shared/BackendBadge'
 
 const PHASE_LABELS: Record<string, string> = {
   loading: 'Loading model\u2026',
@@ -71,6 +72,7 @@ function calculateWeightedProgress(
 export function TestProgress(): React.ReactNode {
   const runProgress = useCompareStore((s) => s.runProgress)
   const status = useCompareStore((s) => s.executionStatus)
+  const configs = useCompareStore((s) => s.configs)
   const maxTokens = useSettingsStore((s) => s.parameters.maxTokens)
 
   const [cloudElapsed, setCloudElapsed] = useState(0)
@@ -101,6 +103,7 @@ export function TestProgress(): React.ReactNode {
   if (status === 'downloading' || !runProgress) return null
 
   const {
+    configId,
     modelName,
     currentIndex,
     totalModels,
@@ -112,8 +115,8 @@ export function TestProgress(): React.ReactNode {
   } = runProgress
 
   const isCloud = phase === 'cloud-pending' || phase === 'cloud-complete'
-  const backendLabel = isCloud ? 'cloud' : 'local'
-  const backendType = isCloud ? 'api' : 'webgpu' // badge color key
+  const configBackend: Backend = configs.find((c) => c.id === configId)?.backend
+    ?? (isCloud ? 'api' : 'webgpu')
 
   // Weighted progress bar calculation per D-01, D-02
   const progressPct = Math.round(
@@ -126,7 +129,7 @@ export function TestProgress(): React.ReactNode {
       <div className="mb-3 flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-text-primary">{modelName}</span>
-          <BackendBadge type={backendLabel} backend={backendType} />
+          <BackendBadge backend={configBackend} />
           <span className="text-text-tertiary">
             ({currentIndex + 1}/{totalModels})
           </span>
@@ -170,20 +173,5 @@ export function TestProgress(): React.ReactNode {
         </div>
       )}
     </div>
-  )
-}
-
-function BackendBadge({ type, backend }: { type: string; backend: string }): React.ReactNode {
-  const cls =
-    type === 'cloud'
-      ? 'bg-cloud-bg text-cloud'
-      : backend === 'wasm'
-        ? 'bg-wasm-bg text-wasm'
-        : 'bg-webgpu-bg text-primary'
-
-  return (
-    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>
-      {type === 'cloud' ? 'cloud' : backend === 'wasm' ? 'wasm' : 'webgpu'}
-    </span>
   )
 }
