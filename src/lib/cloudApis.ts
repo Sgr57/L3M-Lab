@@ -1,8 +1,81 @@
-import type { GenerationParameters, TestMetrics } from '../types'
+import type { GenerationParameters, TestMetrics, CloudErrorCategory } from '../types'
 
 interface CloudResponse {
   output: string
   metrics: Pick<TestMetrics, 'ttft' | 'tokensPerSecond' | 'totalTime' | 'tokenCount'>
+}
+
+export class CloudApiError extends Error {
+  constructor(
+    public readonly provider: string,
+    public readonly status: number,
+    public readonly rawBody: string,
+    message: string
+  ) {
+    super(message)
+    this.name = 'CloudApiError'
+  }
+}
+
+export interface ClassifiedError {
+  category: CloudErrorCategory
+  hint: string
+  rawError: string
+  provider: string
+}
+
+export function classifyCloudError(err: unknown, provider: string, status?: number): ClassifiedError {
+  const rawError = err instanceof Error ? err.message : String(err)
+
+  // TypeError: Failed to fetch = network/CORS (fetch spec: CORS failures produce TypeError with no status)
+  if (err instanceof TypeError) {
+    return {
+      category: 'cors',
+      hint: provider === 'anthropic'
+        ? 'Anthropic API has CORS restrictions. A browser proxy may be needed.'
+        : `Network error reaching ${provider} API. Check your connection or CORS settings.`,
+      rawError,
+      provider,
+    }
+  }
+
+  // HTTP status-based classification
+  if (status) {
+    if (status === 401 || status === 403) {
+      return {
+        category: 'auth',
+        hint: `Check your ${provider} API key in Settings.`,
+        rawError,
+        provider,
+      }
+    }
+    if (status === 429) {
+      return {
+        category: 'rate-limit',
+        hint: `${provider} rate limit exceeded. Wait a moment and try again.`,
+        rawError,
+        provider,
+      }
+    }
+    if (status === 408 || status === 504) {
+      return {
+        category: 'timeout',
+        hint: `${provider} request timed out. Try a shorter prompt or try again.`,
+        rawError,
+        provider,
+      }
+    }
+    if (status >= 500) {
+      return {
+        category: 'server',
+        hint: `${provider} server error. Try again later.`,
+        rawError,
+        provider,
+      }
+    }
+  }
+
+  return { category: 'unknown', hint: 'An unexpected error occurred.', rawError, provider }
 }
 
 export async function callOpenAI(
@@ -34,7 +107,7 @@ export async function callOpenAI(
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenAI API error: ${res.status} ${err}`)
+    throw new CloudApiError('openai', res.status, err, `OpenAI API error: ${res.status}`)
   }
 
   const data = await res.json()
@@ -80,7 +153,7 @@ export async function callAnthropic(
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Anthropic API error: ${res.status} ${err}`)
+    throw new CloudApiError('anthropic', res.status, err, `Anthropic API error: ${res.status}`)
   }
 
   const data = await res.json()
@@ -123,7 +196,7 @@ export async function callGoogle(
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Google AI API error: ${res.status} ${err}`)
+    throw new CloudApiError('google', res.status, err, `Google AI API error: ${res.status}`)
   }
 
   const data = await res.json()
