@@ -204,13 +204,13 @@ export function getDisambiguatedLabels(configs: TestConfig[]): Map<string, strin
 
 ### Pattern 3: Custom Recharts YAxis Tick with Backend Badge
 
-**What:** A custom tick function for Recharts YAxis that renders the model name as SVG text plus a backend badge using SVG `<foreignObject>` for HTML badge rendering.
+**What:** A custom tick function for Recharts YAxis that renders the model name as SVG text plus a backend badge using pure SVG rect+text.
 **When to use:** Both charts in PerformanceCharts (tok/s and time breakdown).
 
 The tick function receives `{ x, y, payload, ... }` where `payload.value` is the category string. Since we need access to the backend type for badge rendering, we pass it through the chart data and look it up in the tick renderer.
 
 ```typescript
-// Inside PerformanceCharts -- custom tick for YAxis
+// Inside PerformanceCharts -- custom tick for YAxis (pure SVG approach)
 // Source: Recharts YAxisTickContentProps type definition (verified from node_modules)
 
 function CustomYAxisTick(props: { x: number; y: number; payload: { value: string }; dataLookup: Map<string, Backend> }) {
@@ -226,32 +226,19 @@ function CustomYAxisTick(props: { x: number; y: number; payload: { value: string
         {payload.value}
       </text>
       {badge && (
-        <foreignObject x={-8 + 4} y={-8} width={36} height={18}>
-          <div style={{ background: badge.bg, color: badge.text, fontSize: 10, fontWeight: 600, padding: '1px 4px', borderRadius: 4, textAlign: 'center' }}>
+        <>
+          <rect x={2} y={-7} width={30} height={14} rx={3} fill={badge.bg} />
+          <text x={17} y={0} dy={3} textAnchor="middle" fontSize={10} fontWeight={600} fill={badge.text}>
             {badgeLabel}
-          </div>
-        </foreignObject>
+          </text>
+        </>
       )}
     </g>
   )
 }
 ```
 
-**Important caveat:** `foreignObject` inside SVG works in Chrome, Firefox, and Safari 17+ (our target browsers per CLAUDE.md). It does NOT work in IE11, but that is out of scope. [VERIFIED: Browser targets from CLAUDE.md: Chrome 115+, Firefox 120+, Safari 17+]
-
-**Alternative approach (pure SVG):** If `foreignObject` causes layout issues, use SVG `<rect>` + `<text>` to simulate a badge:
-
-```typescript
-<g transform={`translate(${x},${y})`}>
-  <text x={-8} y={0} dy={4} textAnchor="end" fontSize={12} fill="#1f2328">
-    {payload.value}
-  </text>
-  <rect x={2} y={-7} width={30} height={14} rx={3} fill={badge.bg} />
-  <text x={17} y={0} dy={3} textAnchor="middle" fontSize={10} fontWeight={600} fill={badge.text}>
-    {badgeLabel}
-  </text>
-</g>
-```
+**Coordinate layout:** Model name renders at `x={-8}` with `textAnchor="end"` (growing leftward). Badge rect starts at `x={2}` (2px right of tick origin), giving a clear 10px gap. This prevents any overlap between name and badge.
 
 **Recommendation:** Use the pure SVG approach (rect + text) -- it is simpler, has no cross-browser edge cases with foreignObject sizing, and aligns better with Recharts' SVG rendering context. [ASSUMED: Based on common Recharts custom tick patterns]
 
@@ -480,17 +467,13 @@ export function TypeBadge({ type, backend }: { type: string; backend: Backend })
 | A3 | YAxis width of 180-200px is sufficient for long model names + badge | Pitfall 5 | Low -- can be adjusted empirically; worst case is a wider margin |
 | A4 | Recharts LabelList `position="right"` works correctly with stacked horizontal bars | Pattern 5 | Medium -- if it positions relative to the segment rather than the full stack, a custom `content` renderer may be needed |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **LabelList position on stacked bars**
-   - What we know: LabelList with `position="right"` places the label to the right of the bar segment it belongs to. On the last stacked segment, this should be at the right edge of the full stack.
-   - What's unclear: Whether Recharts positions the label at the end of the individual segment or the cumulative stack position.
-   - Recommendation: Implement with `position="right"` on the last segment first. If placement is wrong, switch to a custom `content` renderer that reads the cumulative position.
+   - RESOLVED: Use `totalTimeFormatted` dataKey on the last stacked segment (generation bar). The `totalTimeFormatted` field is pre-computed in the data array containing the full total time string (e.g. "2.3s"), so even if LabelList reads the segment position, the label text shows the correct total. If label placement (position) is wrong, implement a custom `content` renderer per Pitfall 2.
 
 2. **YAxis width with dynamic label lengths**
-   - What we know: Current width is 120px with 11px font. New labels will be larger (12px font + badge chip).
-   - What's unclear: Exact pixel width needed for the longest expected label.
-   - Recommendation: Start with `width={180}` and `'auto'` if supported in Recharts v3. Adjust empirically during implementation.
+   - RESOLVED: Use `width={180}` as the static YAxis width. This accommodates model names up to ~20 characters plus a 30px badge chip. The pure SVG tick approach (name at x=-8 end-anchored, badge rect at x=2) fits within this width. Adjust empirically during implementation if needed.
 
 ## Validation Architecture
 
