@@ -1,57 +1,71 @@
+import { useMemo } from 'react'
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from 'recharts'
 import { useCompareStore } from '../../stores/useCompareStore'
+import { getModelColor, hexToRgba } from '../../lib/modelColors'
+import { getDisambiguatedLabels } from '../../lib/disambiguate'
 import type { Backend } from '../../types'
 
-const BACKEND_COLORS: Record<Backend, string> = {
-  api: '#8250df',
-  webgpu: '#0969da',
-  wasm: '#1a7f37',
+function CustomYAxisTick({ x, y, payload, backendLookup }: {
+  x: number; y: number; payload: { value: string }; backendLookup: Map<string, Backend>
+}): React.JSX.Element {
+  const backend = backendLookup.get(payload.value)
+  const badgeColors: Record<Backend, { bg: string; text: string }> = {
+    api: { bg: '#fbefff', text: '#8250df' },
+    webgpu: { bg: '#ddf4ff', text: '#0969da' },
+    wasm: { bg: '#dafbe1', text: '#1a7f37' },
+  }
+  const badge = backend ? badgeColors[backend] : null
+  const badgeLabel = backend === 'api' ? 'API' : backend === 'webgpu' ? 'GPU' : 'WASM'
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={-8} y={0} dy={4} textAnchor="end" fontSize={12} fill="#1f2328">
+        {payload.value}
+      </text>
+      {badge && (
+        <>
+          <rect x={2} y={-7} width={30} height={14} rx={3} fill={badge.bg} />
+          <text x={17} y={0} dy={3} textAnchor="middle" fontSize={10} fontWeight={600} fill={badge.text}>
+            {badgeLabel}
+          </text>
+        </>
+      )}
+    </g>
+  )
 }
 
-const BACKEND_COLORS_DARK: Record<Backend, string> = {
-  api: '#8250df',
-  webgpu: '#0969da',
-  wasm: '#1a7f37',
-}
-
-const BACKEND_COLORS_MID: Record<Backend, string> = {
-  api: '#c297dc',
-  webgpu: '#79c0ff',
-  wasm: '#7ee787',
-}
-
-const BACKEND_COLORS_LIGHT: Record<Backend, string> = {
-  api: '#e8d5f5',
-  webgpu: '#b6dcfe',
-  wasm: '#aff5b4',
-}
-
-export function PerformanceCharts() {
+export function PerformanceCharts(): React.JSX.Element | null {
   const results = useCompareStore((s) => s.results)
+  const configs = useCompareStore((s) => s.configs)
 
-  if (results.length === 0) return null
+  const successfulResults = results.filter((r) => !r.error)
 
-  const speedData = [...results]
+  const labels = useMemo(() => getDisambiguatedLabels(configs), [configs])
+
+  if (successfulResults.length === 0) return null
+
+  const speedData = [...successfulResults]
     .sort((a, b) => b.metrics.tokensPerSecond - a.metrics.tokensPerSecond)
     .map((r) => ({
-      name: r.config.displayName,
+      name: labels.get(r.config.id) ?? r.config.displayName,
       tokensPerSecond: Number(r.metrics.tokensPerSecond.toFixed(1)),
       backend: r.config.backend,
+      configId: r.config.id,
     }))
 
-  const timeData = [...results]
+  const timeData = [...successfulResults]
     .sort((a, b) => a.metrics.totalTime - b.metrics.totalTime)
     .map((r) => ({
-      name: r.config.displayName,
+      name: labels.get(r.config.id) ?? r.config.displayName,
       loadTime: r.metrics.loadTime ?? 0,
       initTime: r.metrics.initTime ?? 0,
       generationTime: Math.max(
@@ -59,59 +73,65 @@ export function PerformanceCharts() {
         r.metrics.totalTime - (r.metrics.loadTime ?? 0) - (r.metrics.initTime ?? 0)
       ),
       backend: r.config.backend,
+      configId: r.config.id,
+      totalTimeFormatted: r.metrics.totalTime < 1000
+        ? `${Math.round(r.metrics.totalTime)}ms`
+        : `${(r.metrics.totalTime / 1000).toFixed(1)}s`,
     }))
 
+  const backendLookup = useMemo(() => {
+    const map = new Map<string, Backend>()
+    for (const d of speedData) map.set(d.name, d.backend)
+    for (const d of timeData) map.set(d.name, d.backend)
+    return map
+  }, [speedData, timeData])
+
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-4">
       {/* Tokens/sec Chart */}
-      <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="rounded-xl border border-border bg-surface p-6">
         <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Tokens / sec
         </div>
-        <ResponsiveContainer width="100%" height={results.length * 44 + 40}>
-          <BarChart layout="vertical" data={speedData} margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" tick={{ fontSize: 11 }} />
+        <ResponsiveContainer width="100%" height={successfulResults.length * 44 + 40}>
+          <BarChart layout="vertical" data={speedData} margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
+            <XAxis type="number" tick={{ fontSize: 12 }} />
             <YAxis
               type="category"
               dataKey="name"
-              width={120}
-              tick={{ fontSize: 11 }}
+              width={180}
+              tick={(props: Record<string, unknown>) => <CustomYAxisTick {...(props as { x: number; y: number; payload: { value: string } })} backendLookup={backendLookup} />}
             />
             <Tooltip
               formatter={(value) => [`${value} tok/s`, 'Speed']}
               contentStyle={{ fontSize: 12 }}
             />
-            <Legend
-              formatter={(value: string) => (
-                <span style={{ fontSize: 11 }}>{value}</span>
-              )}
-            />
             <Bar dataKey="tokensPerSecond" name="Tokens/sec" radius={[0, 4, 4, 0]}>
+              <LabelList dataKey="tokensPerSecond" position="right" fontSize={12} fill="#1f2328" />
               {speedData.map((entry, i) => (
                 <Cell
                   key={i}
-                  fill={BACKEND_COLORS[entry.backend as Backend]}
+                  fill={getModelColor(configs, entry.configId)}
                 />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <BackendLegend />
       </div>
 
       {/* Time Breakdown Chart */}
-      <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="rounded-xl border border-border bg-surface p-6">
         <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Time Breakdown
         </div>
-        <ResponsiveContainer width="100%" height={results.length * 44 + 40}>
-          <BarChart layout="vertical" data={timeData} margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" tick={{ fontSize: 11 }} unit=" ms" />
+        <ResponsiveContainer width="100%" height={successfulResults.length * 44 + 40}>
+          <BarChart layout="vertical" data={timeData} margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
+            <XAxis type="number" tick={{ fontSize: 12 }} unit=" ms" />
             <YAxis
               type="category"
               dataKey="name"
-              width={120}
-              tick={{ fontSize: 11 }}
+              width={180}
+              tick={(props: Record<string, unknown>) => <CustomYAxisTick {...(props as { x: number; y: number; payload: { value: string } })} backendLookup={backendLookup} />}
             />
             <Tooltip
               formatter={(value, name) => [
@@ -120,16 +140,11 @@ export function PerformanceCharts() {
               ]}
               contentStyle={{ fontSize: 12 }}
             />
-            <Legend
-              formatter={(value: string) => (
-                <span style={{ fontSize: 11 }}>{value}</span>
-              )}
-            />
             <Bar dataKey="loadTime" name="Load" stackId="time" radius={[0, 0, 0, 0]}>
               {timeData.map((entry, i) => (
                 <Cell
                   key={i}
-                  fill={BACKEND_COLORS_DARK[entry.backend as Backend]}
+                  fill={getModelColor(configs, entry.configId)}
                 />
               ))}
             </Bar>
@@ -137,7 +152,7 @@ export function PerformanceCharts() {
               {timeData.map((entry, i) => (
                 <Cell
                   key={i}
-                  fill={BACKEND_COLORS_MID[entry.backend as Backend]}
+                  fill={hexToRgba(getModelColor(configs, entry.configId), 0.65)}
                 />
               ))}
             </Bar>
@@ -147,45 +162,22 @@ export function PerformanceCharts() {
               stackId="time"
               radius={[0, 4, 4, 0]}
             >
+              <LabelList dataKey="totalTimeFormatted" position="right" fontSize={12} fill="#1f2328" />
               {timeData.map((entry, i) => (
                 <Cell
                   key={i}
-                  fill={BACKEND_COLORS_LIGHT[entry.backend as Backend]}
+                  fill={hexToRgba(getModelColor(configs, entry.configId), 0.35)}
                 />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <BackendLegend />
+        <div className="mt-2 flex items-center justify-center gap-4 text-xs text-text-secondary">
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-text-primary" /> Load</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-text-primary/65" /> Init</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-text-primary/35" /> Generate</span>
+        </div>
       </div>
-    </div>
-  )
-}
-
-function BackendLegend() {
-  return (
-    <div className="mt-2 flex items-center justify-center gap-4 text-[11px] text-text-secondary">
-      <span className="flex items-center gap-1">
-        <span
-          className="inline-block h-2.5 w-2.5 rounded-sm"
-          style={{ background: BACKEND_COLORS.api }}
-        />
-        Cloud / API
-      </span>
-      <span className="flex items-center gap-1">
-        <span
-          className="inline-block h-2.5 w-2.5 rounded-sm"
-          style={{ background: BACKEND_COLORS.webgpu }}
-        />
-        WebGPU
-      </span>
-      <span className="flex items-center gap-1">
-        <span
-          className="inline-block h-2.5 w-2.5 rounded-sm"
-          style={{ background: BACKEND_COLORS.wasm }}
-        />
-        WASM
-      </span>
     </div>
   )
 }
