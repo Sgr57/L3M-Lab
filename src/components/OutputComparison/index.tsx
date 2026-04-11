@@ -88,7 +88,7 @@ export function OutputComparison(): React.JSX.Element | null {
                   </span>
                   <TypeBadge type={type} backend={r.config.backend} />
                   <span className="text-xs text-text-tertiary">
-                    {r.config.backend} / {r.config.quantization.toUpperCase()}
+                    {r.config.backend === 'api' ? r.config.backend : `${r.config.backend} / ${r.config.quantization.toUpperCase()}`}
                   </span>
                   {r.fallbackBackend && (
                     <span className="text-xs text-warning font-semibold">

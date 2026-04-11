@@ -183,17 +183,17 @@ export function ComparisonTable(): React.JSX.Element | null {
                 >
                   <td className="px-2 py-2 font-medium text-text-primary">
                     {labels.get(r.config.id) ?? r.config.displayName}
+                    {isError && r.errorCategory && (
+                      <div className="text-xs font-normal text-error">
+                        {ERROR_CATEGORY_LABELS[r.errorCategory] ?? 'Error'}
+                      </div>
+                    )}
                   </td>
                   <td className="px-2 py-2">
                     <TypeBadge type={type} backend={r.config.backend} />
-                    {isError && r.errorCategory && (
-                      <span className="ml-1 text-xs text-error">
-                        {ERROR_CATEGORY_LABELS[r.errorCategory] ?? 'Error'}
-                      </span>
-                    )}
                   </td>
                   <td className="px-2 py-2 text-text-secondary">
-                    {r.config.quantization.toUpperCase()}
+                    {r.config.backend === 'api' ? '--' : r.config.quantization.toUpperCase()}
                   </td>
                   <td className="px-2 py-2">
                     <BackendBadge backend={r.config.backend} />

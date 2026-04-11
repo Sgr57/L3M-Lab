@@ -3,12 +3,12 @@ import type { TestConfig } from '../types'
 /** 10-color palette for per-model identity across charts and tables */
 export const MODEL_COLORS: string[] = [
   '#2563eb',
-  '#dc2626',
+  '#0891b2',
   '#16a34a',
   '#d97706',
   '#9333ea',
-  '#0891b2',
-  '#e11d48',
+  '#6d28d9',
+  '#0d9488',
   '#4f46e5',
   '#ca8a04',
   '#059669',
