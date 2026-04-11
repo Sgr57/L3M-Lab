@@ -36,13 +36,12 @@ Declared values (must be multiples of 4):
 | xs | 4px | Icon gaps (`gap-1`), inline padding (`py-0.5`, `px-1.5`) |
 | sm | 8px | Compact element spacing (`gap-2`), inner card padding offsets |
 | md | 16px | Default element spacing (`gap-4`), standard card padding (`p-4`) |
-| lg | 20px | Card content padding (`p-5` = 20px, established pattern) |
-| xl | 24px | Section gaps (`gap-6`), section header margins |
-| 2xl | 32px | Nav horizontal padding (`px-8` = 32px) |
+| lg | 24px | Section gaps (`gap-6`), section header margins |
+| xl | 32px | Nav horizontal padding (`px-8` = 32px) |
 
 Exceptions:
-- 12px (`mb-3`, `gap-3`) is used extensively between section header and content, between stats rows, and between card sub-sections. This is an established project convention.
-- 14px (`py-3.5`, `p-3.5`) is used for output card inner padding. Inherited from Phase 2 OutputComparison.
+- **12px** (`mb-3`, `gap-3`): Used extensively across the codebase between section headers and content, between stats rows, and between card sub-sections. This is an established project convention from Phase 1 onward (verified in 20+ occurrences across ApiKeySettings, PromptInput, PreDownload, ComparisonTable, TestProgress, PerformanceCharts, ModelSelector, OutputComparison, NavBar, TestControls, ResultsSummary). 12px is a multiple of 4 and falls between `sm` (8px) and `md` (16px) in the scale.
+- **20px** (`p-5`): Standard card content padding established in Phase 1 and used consistently in every card-style component: ApiKeySettings, PreDownload, ComparisonTable, PerformanceCharts, PromptInput, TestProgress, OutputComparison, ModelSelector (verified in 10 component files). This is a frozen project convention -- changing it would require a project-wide refactor outside Phase 4 scope. Justified as an established exception that sits between `md` (16px) and `lg` (24px) to give cards slightly more breathing room than generic spacing without the larger step to 24px.
 
 ---
 
@@ -56,6 +55,8 @@ Exceptions:
 | Component Title | 14px | 600 (semibold) | 1.5 | `text-sm font-semibold` |
 
 Source: Established in Phases 1-3 components. Body text in cards uses 13px. Labels, badges, and metadata use 11px. Section headers use `text-xs` (12px) uppercase. Component names/titles use `text-sm` (14px) semibold.
+
+**Note on 12px/13px differentiation:** Despite the narrow 1px gap, these two sizes serve categorically different roles. 12px (`text-xs`) is always paired with `font-semibold uppercase tracking-wider` for section headers -- a distinctly different visual treatment from 13px body text at regular weight. The differentiation is achieved through the combination of size + weight + letter-spacing + case, not size alone.
 
 ---
 
@@ -71,7 +72,7 @@ Source: Established in Phases 1-3 components. Body text in cards uses 13px. Labe
 Accent reserved for:
 - Progress bar gradient fill (`bg-gradient-to-r from-primary to-[#218bff]`)
 - Active navigation link background highlights
-- "Cancel" button border and text
+- "Stop Run" button border and text (cancel action during execution)
 - Actionable text links ("Show raw error", "Expand")
 
 ### Phase 4 Semantic Colors
@@ -89,6 +90,12 @@ Source: All tokens already defined in `src/index.css` @theme block from Phase 1 
 
 ---
 
+## Visual Hierarchy
+
+**Primary visual anchor:** The progress bar + active model name row. During execution, this is the focal point the user's eye should track. The weighted progress bar (gradient fill, `transition-all duration-300`) and the adjacent model name with backend badge form the dominant visual element. All other progress metadata (phase label, token count, speed, elapsed time) is secondary context grouped below the anchor.
+
+---
+
 ## Component Inventory
 
 ### Modified Components
@@ -99,11 +106,11 @@ Source: All tokens already defined in `src/index.css` @theme block from Phase 1 
 
 **Changes for Phase 4:**
 
-1. **Weighted progress bar** — Replace `(currentIndex + 1) / totalModels` with weighted formula per D-01. Loading=10%, initializing=10%, generating=80% of each model's slice. Generating portion tracks `tokensGenerated / maxTokens`.
+1. **Weighted progress bar** -- Replace `(currentIndex + 1) / totalModels` with weighted formula per D-01. Loading=10%, initializing=10%, generating=80% of each model's slice. Generating portion tracks `tokensGenerated / maxTokens`.
 
-2. **Cloud model timer** — When `phase` is `'cloud-pending'`, show "Waiting for response..." text with a live elapsed timer updating every 100ms. Timer is component-local state via `setInterval` (not store-driven, per RESEARCH.md anti-pattern guidance). Display format: `0.0s`, `1.2s`, `12.3s`.
+2. **Cloud model timer** -- When `phase` is `'cloud-pending'`, show "Waiting for response..." text with a live elapsed timer updating every 100ms. Timer is component-local state via `setInterval` (not store-driven, per RESEARCH.md anti-pattern guidance). Display format: `0.0s`, `1.2s`, `12.3s`.
 
-3. **Backend type badge** — Add a small colored badge next to model name showing backend type:
+3. **Backend type badge** -- Add a small colored badge next to model name showing backend type:
    - Cloud: `bg-cloud-bg text-cloud` with label "cloud"
    - WebGPU: `bg-webgpu-bg text-primary` with label "webgpu"
    - WASM: `bg-wasm-bg text-wasm` with label "wasm"
@@ -119,15 +126,15 @@ Source: All tokens already defined in `src/index.css` @theme block from Phase 1 
    | `cloud-pending` | "Waiting for response..." |
    | `cloud-complete` | "Complete" |
 
-5. **Progress bar visual continuity** — Keep existing gradient (`bg-gradient-to-r from-primary to-[#218bff]`) and transition (`transition-all duration-300`). The weighted formula provides smooth movement; no additional animation needed.
+5. **Progress bar visual continuity** -- Keep existing gradient (`bg-gradient-to-r from-primary to-[#218bff]`) and transition (`transition-all duration-300`). The weighted formula provides smooth movement; no additional animation needed.
 
 #### ComparePage (`src/pages/ComparePage.tsx`)
 
 **Changes for Phase 4:**
 
-1. **FallbackBanner placement** — Render `<FallbackBanner />` between `<TestProgress />` and the results section. Visible only when `fallbackWarning` state is non-null. Persists until run completes (D-05).
+1. **FallbackBanner placement** -- Render `<FallbackBanner />` between `<TestProgress />` and the results section. Visible only when `fallbackWarning` state is non-null. Persists until run completes (D-05).
 
-2. **Error results inline** — No layout change needed. Error results with `errorCategory` are added to `results[]` via `addResult()` in execution order. OutputComparison already renders error cards with red tint. Phase 4 enhances the error display within the existing card pattern.
+2. **Error results inline** -- No layout change needed. Error results with `errorCategory` are added to `results[]` via `addResult()` in execution order. OutputComparison already renders error cards with red tint. Phase 4 enhances the error display within the existing card pattern.
 
 ### New Components
 
@@ -184,7 +191,6 @@ Source: All tokens already defined in `src/index.css` @theme block from Phase 1 
 | Element | Copy |
 |---------|------|
 | Primary CTA | "Run Comparison" (existing, no change for Phase 4) |
-| Cancel CTA | "Cancel" (existing, no change) |
 | Progress: loading phase | "Loading model..." |
 | Progress: initializing phase | "Initializing..." |
 | Progress: generating phase | "Generating..." |
@@ -204,7 +210,9 @@ Source: All tokens already defined in `src/index.css` @theme block from Phase 1 
 | Error: raw toggle (expanded) | "Hide raw error" |
 | Empty state heading | N/A (Phase 4 has no empty states -- progress only shows during execution) |
 | Empty state body | N/A |
-| Destructive confirmation | N/A (no destructive actions in this phase; cancel is non-destructive) |
+| Destructive confirmation | N/A (no destructive actions in this phase) |
+
+Note: The cancel/stop button label ("Stop Run" / "Cancel") was established in a prior phase and is not modified by Phase 4. It is out of scope for this contract.
 
 ---
 
