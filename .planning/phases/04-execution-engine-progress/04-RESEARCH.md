@@ -494,7 +494,7 @@ set({ fallbackWarning: null, /* ...existing resets */ })
 | A2 | ONNX Runtime error messages contain "device lost" or "device hung" strings when GPU fails | Architecture Patterns (isDeviceLostError) | MEDIUM -- if error messages differ, detection may miss some cases; the `gpuDeviceLost` flag from `.lost` promise is the primary mechanism |
 | A3 | `env.backends.onnx.webgpu.device` is accessible after first WebGPU pipeline load in a worker thread | Architecture Patterns | LOW -- verified the type exists in source; runtime behavior in worker confirmed by onnxruntime docs stating device is accessible after session creation |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Inter-model delay duration**
    - What we know: `dispose()` + `session.release()` triggers GPU buffer cache cleanup in ONNX RT 1.25. The GPU driver then reclaims memory asynchronously.
