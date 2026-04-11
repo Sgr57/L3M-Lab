@@ -22,9 +22,11 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 - [x] Cloud model selection (GPT, Claude, Gemini) gated by API key presence — Validated in Phase 2: Model Selection & Settings
 - [x] Settings page for API key management (localStorage persistence) — Validated in Phase 2: Model Selection & Settings
 
+- [x] Multi-line prompt input with collapsible generation parameters panel (temperature, max tokens, top-p, repeat penalty) — Validated in Phase 3: Prompt Input & Test Controls
+- [x] Pre-download models with serial per-model progress, WASM-forced to avoid GPU memory — Validated in Phase 3: Prompt Input & Test Controls
+- [x] Generation parameters persist across page refresh via useSettingsStore — Validated in Phase 3: Prompt Input & Test Controls
+
 ### Active
-- [ ] Multi-line prompt input with inline generation parameters (temperature, max tokens, top-p, repeat penalty)
-- [ ] Pre-download models in parallel without loading into memory
 - [ ] Sequential test execution with live streaming output and progress
 - [ ] Performance metrics collection: model size, load time, init time, TTFT, tok/s, total time, token count
 - [ ] Results summary with stat cards (models tested, total time, fastest overall, fastest local)
