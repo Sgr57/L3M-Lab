@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: false
 preset: none
 created: 2026-04-11
+revised: 2026-04-11
 ---
 
 # Phase 5 -- UI Design Contract
@@ -31,32 +32,43 @@ Declared values (must be multiples of 4). Derived from existing codebase usage (
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4px | Icon gaps, inline badge padding, star rating gaps (`gap-0.5`, `gap-1`) |
-| sm | 8px | Compact element spacing, table cell padding-y (`py-2`) |
-| md | 12px | Card inner spacing (`p-3`, `p-3.5`), chart/section gaps (`gap-3`) |
-| lg | 16px | Default section padding, card body padding |
-| xl | 20px | Chart container padding (`p-5`) |
-| 2xl | 24px | Not used in this phase |
-| 3xl | 32px | Not used in this phase |
+| xs | 4px | Icon gaps, inline badge padding, star rating gaps (`gap-1`) |
+| sm | 8px | Compact element spacing, table cell padding (`px-2 py-2`), chart left margin |
+| md | 16px | Card inner spacing (`p-4`), default section padding, chart/section gaps (`gap-4`) |
+| lg | 24px | Chart container padding (`p-6`), chart right margin, larger section gaps |
+| xl | 32px | Not used in this phase |
+| 2xl | 48px | Not used in this phase |
+| 3xl | 64px | Not used in this phase |
 
-Exceptions: Table cell horizontal padding at 10px (`px-2.5`) -- established pattern from ComparisonTable. Chart left margin at 10px, right margin at 20px -- Recharts layout margins.
+No exceptions. All spacing values are multiples of 4.
 
 ---
 
 ## Typography
 
-Derived from existing component code. All components in this phase already use these sizes consistently.
+Collapsed to 4 sizes and 2 weights for design consistency. All prior sizes map into this scale.
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Display | 28px | 700 (bold) | 1.2 | Stat card primary values (`text-[28px] font-bold`) |
-| Body | 13px | 400 (normal) | 1.625 (`leading-relaxed`) | Output card text, error messages, hint text |
-| Label | 11px | 600 (semibold) | 1.4 | Section headers, table column headers, metric labels, button text, show-more text |
-| Badge | 10px | 600 (semibold) | 1.2 | Type badges, backend badges, error category badges |
-| Chart tick | 11px | 400 (normal) | 1.2 | Recharts axis tick labels |
-| Table data | 12px (`text-xs`) | 400/500 | 1.5 | Table cell values |
+| Display | 28px | 600 (semibold) | 1.2 | Stat card primary values (`text-[28px] font-semibold`) |
+| Sub-heading | 18px | 600 (semibold) | 1.2 | Star rating in output cards (`text-lg`) |
+| Body | 14px | 400 (normal) | 1.5 | Output card text, error messages, hint text, table data cells, star rating in table, output card header model name |
+| Label | 12px (`text-xs`) | 600 (semibold) | 1.5 | Section headers, table column headers, metric labels, button text, show-more text, badges (type/backend/error), chart axis tick labels, chart value labels, "Expand"/"Collapse" links, "Show raw error" link |
 
 Section headers use `text-xs font-semibold uppercase tracking-wider text-text-secondary` -- established pattern across all results components.
+
+**Size mapping from previous spec:**
+- 10px, 11px badges/labels/ticks -> 12px (`text-xs`)
+- 12px table data, 13px body text -> 14px (`text-sm`)
+- 14px star rating (table) -> 14px (`text-sm`)
+- 18px star rating (output cards) -> 18px (`text-lg`)
+- 28px stat card values -> 28px (custom)
+
+**Weight mapping from previous spec:**
+- font-bold (700) -> font-semibold (600) on display values
+- font-medium (500) -> font-normal (400) on table data
+- font-semibold (600) -> unchanged
+- font-normal (400) -> unchanged
 
 ---
 
@@ -76,7 +88,7 @@ Accent reserved for: stat card display values, active sort column hover, "Expand
 
 | Role | Value | CSS Variable | Usage |
 |------|-------|-------------|-------|
-| Success | `#1a7f37` | `--color-success` | Best value in table (green bold) |
+| Success | `#1a7f37` | `--color-success` | Best value in table (green semibold) |
 | Error | `#cf222e` | `--color-error` | Worst value in table (red text), error card borders, error badges, error row tint |
 | Warning | `#bf8700` | `--color-warning` | Fallback indicator ("WebGPU -> WASM"), star rating filled color |
 
@@ -121,10 +133,10 @@ All components exist. This section specifies the visual contract each must satis
 
 | Property | Contract |
 |----------|----------|
-| Layout | 4-column grid (`grid grid-cols-4 gap-3`) |
+| Layout | 4-column grid (`grid grid-cols-4 gap-4`) |
 | Card surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-4`, `text-center` |
-| Value text | 28px bold, `text-primary` |
-| Label text | 11px, `text-text-secondary`, `mt-0.5` |
+| Value text | 28px semibold (600), `text-primary` |
+| Label text | 12px (`text-xs`), `text-text-secondary`, `mt-1` |
 | Error handling | Per D-09: Filter out results with `error` field before all calculations. Failed models excluded from count, total time, fastest overall, fastest local. |
 | Empty state | If zero successful results, render nothing (return null) |
 
@@ -138,20 +150,21 @@ All components exist. This section specifies the visual contract each must satis
 
 | Property | Contract |
 |----------|----------|
-| Layout | 2-column grid (`grid grid-cols-2 gap-3`) |
-| Panel surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-5` |
-| Section header | 11px semibold uppercase tracking-wider `text-text-secondary` |
+| Layout | 2-column grid (`grid grid-cols-2 gap-4`) |
+| Panel surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-6` |
+| Section header | 12px semibold uppercase tracking-wider `text-text-secondary` |
 | Chart height | `results.length * 44 + 40` px per chart |
 | Error handling | Per D-10: Filter out results with `error` field. Only successful runs appear in charts. |
 | Bar radius | `[0, 4, 4, 0]` on rightmost bar |
+| Chart margins | `{ left: 8, right: 24, top: 8, bottom: 8 }` (all multiples of 4) |
 
 **Tok/s chart (left panel):**
 - Horizontal bar chart, sorted descending by `tokensPerSecond`
 - Bar fill: per-model color from `MODEL_COLORS[configIndex]` (D-01, D-03)
 - Y-axis: Model display name (disambiguated per D-04/D-05) + inline backend badge chip
 - Y-axis custom tick: Render model name text + a small colored badge ("API"/"GPU"/"WASM") using backend colors (D-07, D-08)
-- X-axis: Numeric, tick font 11px
-- Value label: Numeric tok/s value displayed on or beside each bar (D-12). Use Recharts `<LabelList>` with `position="right"`, font 11px, `fill="#1f2328"`
+- X-axis: Numeric, tick font 12px
+- Value label: Numeric tok/s value displayed on or beside each bar (D-12). Use Recharts `<LabelList>` with `position="right"`, font 12px, `fill="#1f2328"`
 - No Legend component (D-08)
 - No BackendLegend (D-13)
 
@@ -160,7 +173,7 @@ All components exist. This section specifies the visual contract each must satis
 - Three segments: `loadTime`, `initTime`, `generationTime` (computed as `totalTime - loadTime - initTime`)
 - Segment colors: Three shades derived from the per-model color (dark/mid/light). Implementation: use the model color at 100% opacity for load, 65% opacity for init, 35% opacity for generation. Apply via inline `fill` with hex + alpha or compute shades.
 - Y-axis: Same custom tick as tok/s chart (model name + backend badge)
-- Total time label: Displayed at the right end of each stacked bar (D-12). Format as "X.Xs" or "Xms". Use Recharts `<LabelList>` on the last stacked bar segment with `position="right"`, font 11px.
+- Total time label: Displayed at the right end of each stacked bar (D-12). Format as "X.Xs" or "Xms". Use Recharts `<LabelList>` on the last stacked bar segment with `position="right"`, font 12px.
 - Recharts Legend: Replace current Legend with a simple inline legend showing "Load | Init | Generate" labels (no backend legend)
 - No BackendLegend (D-13)
 
@@ -168,11 +181,11 @@ All components exist. This section specifies the visual contract each must satis
 
 | Property | Contract |
 |----------|----------|
-| Panel surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-5` |
-| Section header | "Detailed Comparison" -- 11px semibold uppercase tracking-wider |
-| Table font | 12px (`text-xs`) for data cells, 11px for column headers |
+| Panel surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-6` |
+| Section header | "Detailed Comparison" -- 12px semibold uppercase tracking-wider |
+| Table font | 14px (`text-sm`) for data cells, 12px (`text-xs`) for column headers |
 | Column headers | Clickable, `cursor-pointer`, hover `text-primary`, sort arrow indicator |
-| Cell padding | `px-2.5 py-2` |
+| Cell padding | `px-2 py-2` |
 | Border | `border-b border-border-light` between rows, `border-b border-border` under header |
 
 **Columns (11):** Model, Type, Quant, Backend, Size, Load, TTFT, Tok/s, Total, Tokens, Rating
@@ -180,7 +193,7 @@ All components exist. This section specifies the visual contract each must satis
 **Row styling:**
 - Per D-03: Row left-border accent uses per-model color, not backend color. Apply as `border-l-[3px]` with `style={{ borderLeftColor: MODEL_COLORS[configIndex] }}`.
 - Per D-11: Error results included as rows. Error rows get `bg-error/5` tint. Metric columns display "Error" text in `text-error`. Error category shown in the Type column or as a tooltip.
-- Best/worst highlighting (RSLT-06): Computed only from successful results. Best `tokensPerSecond` and best (lowest) `totalTime` in `text-success font-bold`. Worst in `text-error`.
+- Best/worst highlighting (RSLT-06): Computed only from successful results. Best `tokensPerSecond` and best (lowest) `totalTime` in `text-success font-semibold`. Worst in `text-error`.
 - Model name column: Use disambiguated label (D-04/D-05/D-06)
 - Star rating: Clickable 1-5 stars, filled `text-star-filled` (`#bf8700`), empty `text-star-empty` (`#d1d9e0`), font-size 14px (`text-sm`)
 
@@ -188,28 +201,28 @@ All components exist. This section specifies the visual contract each must satis
 
 | Property | Contract |
 |----------|----------|
-| Panel surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-5` |
-| Section header | "Model Outputs" -- 11px semibold uppercase tracking-wider |
+| Panel surface | `bg-surface`, `border border-border`, `rounded-xl`, `p-6` |
+| Section header | "Model Outputs" -- 12px semibold uppercase tracking-wider |
 | View toggle | List/Grid pill toggle, active state `bg-webgpu-bg text-primary` |
 | Initial visible | 3 cards |
-| Show more | "Show N more" button -- full-width, `border border-border`, `rounded-lg`, `py-2`, `text-xs font-medium text-text-secondary`, hover `border-primary text-primary` |
+| Show more | "Show N more" button -- full-width, `border border-border`, `rounded-lg`, `py-2`, `text-xs font-semibold text-text-secondary`, hover `border-primary text-primary` |
 
 **Output card:**
 - Left border: 3px, per-model color from `MODEL_COLORS[configIndex]` (D-03, RSLT-08). NOT backend color.
 - Error cards: Left border `#cf222e` (error red), background `bg-error/5`, border `border-error/30` (existing pattern preserved)
-- Header: Model display name (disambiguated, D-04) at 14px semibold + TypeBadge + backend/quant meta at 11px tertiary
-- Metrics: `tok/s`, `tokens`, `totalTime` at 11px `text-text-secondary`, right-aligned
-- Fallback indicator: "WebGPU -> WASM" at 11px `text-warning font-medium` (existing)
-- Output text: 13px `leading-relaxed`, collapsed to `max-h-20 overflow-hidden`, expandable
-- Error display: Error category badge (10px semibold, `bg-error/10 text-error`), hint text at 13px, collapsible raw error
-- Footer: "Expand"/"Collapse" link at 11px `text-primary`, star rating, "Copy" button (existing)
+- Header: Model display name (disambiguated, D-04) at 14px semibold + TypeBadge + backend/quant meta at 12px tertiary
+- Metrics: `tok/s`, `tokens`, `totalTime` at 12px `text-text-secondary`, right-aligned
+- Fallback indicator: "WebGPU -> WASM" at 12px `text-warning font-semibold` (existing)
+- Output text: 14px, line-height 1.5, collapsed to `max-h-20 overflow-hidden`, expandable
+- Error display: Error category badge (12px semibold, `bg-error/10 text-error`), hint text at 14px, collapsible raw error
+- Footer: "Expand"/"Collapse" link at 12px `text-primary`, star rating, "Copy Output" button (existing)
 
 ### ExportBar
 
 | Property | Contract |
 |----------|----------|
 | Layout | `flex justify-end gap-2`, above a `border-t border-border-light pt-4` divider |
-| Button style | `rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-text-secondary`, hover `bg-bg text-text-primary` |
+| Button style | `rounded-lg border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary`, hover `bg-bg text-text-primary` |
 
 **Buttons (3):**
 1. "Export Markdown" -- downloads `.md` file (D-14). NOT clipboard copy.
@@ -221,13 +234,13 @@ Per D-14: All three buttons trigger `downloadFile()`. No clipboard copy button. 
 ### Shared Sub-Components
 
 **TypeBadge** (exists in ComparisonTable and OutputComparison -- extract to shared):
-- `inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold`
+- `inline-block rounded-md px-1.5 py-0.5 text-xs font-semibold`
 - cloud: `bg-cloud-bg text-cloud` label "cloud"
 - local-wasm: `bg-wasm-bg text-wasm` label "local-wasm"
 - local (webgpu): `bg-webgpu-bg text-primary` label "local"
 
 **BackendBadge** (exists in ComparisonTable -- used in table and chart Y-axis):
-- `inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold`
+- `inline-block rounded-md px-1.5 py-0.5 text-xs font-semibold`
 - api: `bg-cloud-bg text-cloud` label "API"
 - webgpu: `bg-webgpu-bg text-primary` label "GPU"
 - wasm: `bg-wasm-bg text-wasm` label "WASM"
@@ -252,6 +265,7 @@ Per D-14: All three buttons trigger `downloadFile()`. No clipboard copy button. 
 | Section headers | "Models tested", "Total time", "Fastest overall", "Fastest local" (stat cards). "Tokens / sec", "Time Breakdown" (charts). "Detailed Comparison" (table). "Model Outputs" (output section). |
 | Show/hide toggle | "Show N more" (collapsed). "Show less" (expanded). N is computed as `results.length - 3`. |
 | Expand/collapse | "Expand" / "Collapse" (output card text toggle) |
+| Copy button | "Copy Output" (copies model output text to clipboard) |
 | Export button labels | "Export Markdown", "Export CSV", "Export JSON" |
 | Fallback indicator | "WebGPU -> WASM" (using HTML right arrow entity) |
 | Error category labels | "CORS Blocked", "Auth Failed", "Rate Limited", "Timeout", "Server Error", "Unknown Error" (from `ERROR_CATEGORY_LABELS` map) |
@@ -287,7 +301,7 @@ Per D-14: All three buttons trigger `downloadFile()`. No clipboard copy button. 
 | Click "Show less" | Return to first 3 cards. |
 | Click "Expand" on a card | Output text expands from `max-h-20` to full height. Link changes to "Collapse". |
 | Click "Collapse" on a card | Output text collapses back to `max-h-20`. |
-| Click "Copy" on a card | Copies `r.output` to clipboard via `navigator.clipboard.writeText()`. |
+| Click "Copy Output" on a card | Copies `r.output` to clipboard via `navigator.clipboard.writeText()`. |
 | Click "Show raw error" | Reveals raw error text in monospace block. Link changes to "Hide raw error". |
 
 ### Export
