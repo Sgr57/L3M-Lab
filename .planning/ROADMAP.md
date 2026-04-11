@@ -100,9 +100,9 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 05-01-PLAN.md -- Shared infrastructure: per-model color palette, label disambiguation utility, shared components, ResultsSummary error filtering
-- [ ] 05-02-PLAN.md -- Visual refinements: PerformanceCharts per-model colors and custom Y-axis, ComparisonTable per-model accents, OutputComparison per-model borders
-- [ ] 05-03-PLAN.md -- Export pipeline: error/fallback metadata in CSV/Markdown, Markdown file download, ExportBar button updates
+- [x] 05-01-PLAN.md -- Shared infrastructure: per-model color palette, label disambiguation utility, shared components, ResultsSummary error filtering
+- [x] 05-02-PLAN.md -- Visual refinements: PerformanceCharts per-model colors and custom Y-axis, ComparisonTable per-model accents, OutputComparison per-model borders
+- [x] 05-03-PLAN.md -- Export pipeline: error/fallback metadata in CSV/Markdown, Markdown file download, ExportBar button updates
 
 ## Progress
 
