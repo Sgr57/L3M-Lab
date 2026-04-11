@@ -115,7 +115,11 @@ Plans:
   2. TestProgress uses shared BackendBadge component with consistent API/GPU/WASM labels
   3. REQUIREMENTS.md traceability checkboxes reflect actual completion state
   4. ROADMAP.md Phase 2 SC #2 no longer references descoped MSEL-03
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md -- Remove dead code (copyToClipboard, fetchAvailableQuantizations), replace TestProgress local BackendBadge with shared component
+- [ ] 06-02-PLAN.md -- Update REQUIREMENTS.md traceability checkboxes and ROADMAP.md phase progress to reflect completion state
 
 ## Progress
 
@@ -129,4 +133,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Prompt Input & Test Controls | 2/2 | Complete | 2026-04-10 |
 | 4. Execution Engine & Progress | 3/3 | Complete | 2026-04-11 |
 | 5. Results & Export | 3/3 | Complete | 2026-04-11 |
-| 6. Cleanup & Documentation | 0/0 | Planned | - |
+| 6. Cleanup & Documentation | 0/2 | Executing | - |
