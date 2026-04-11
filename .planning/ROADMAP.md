@@ -96,13 +96,13 @@ Plans:
   3. Comparison table is sortable by any column, rows are color-coded by model type, best values in green bold and worst in red
   4. Output comparison cards show model name, type badge, key metrics, collapsible full text, and clickable star rating -- with color-coded left borders and "Show N more" collapse
   5. User can export results as JSON, CSV, or copy as Markdown -- all downloads produce a file on disk
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
+- [ ] 05-01-PLAN.md -- Shared infrastructure: per-model color palette, label disambiguation utility, shared components, ResultsSummary error filtering
+- [ ] 05-02-PLAN.md -- Visual refinements: PerformanceCharts per-model colors and custom Y-axis, ComparisonTable per-model accents, OutputComparison per-model borders
+- [ ] 05-03-PLAN.md -- Export pipeline: error/fallback metadata in CSV/Markdown, Markdown file download, ExportBar button updates
 
 ## Progress
 
