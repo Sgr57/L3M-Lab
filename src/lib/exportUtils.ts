@@ -51,11 +51,21 @@ export function formatAsMarkdown(run: ComparisonRun): string {
     }
   }
 
+  const errorsOrFallbacks = run.results.filter((r) => r.error || r.fallbackBackend)
+  if (errorsOrFallbacks.length > 0) {
+    lines.push('', '## Errors & Fallbacks', '', '| Model | Error Category | Hint | Fallback |', '|-------|---------------|------|----------|')
+    for (const r of errorsOrFallbacks) {
+      lines.push(
+        `| ${r.config.displayName} | ${r.errorCategory ?? '--'} | ${r.errorHint ?? '--'} | ${r.fallbackBackend ?? '--'} |`
+      )
+    }
+  }
+
   return lines.join('\n')
 }
 
 export function formatAsCSV(run: ComparisonRun): string {
-  const header = 'Model,Type,Quantization,Backend,Size (bytes),Load Time (ms),Init Time (ms),TTFT (ms),Tokens/sec,Total Time (ms),Token Count,Rating,Output'
+  const header = 'Model,Type,Quantization,Backend,Size (bytes),Load Time (ms),Init Time (ms),TTFT (ms),Tokens/sec,Total Time (ms),Token Count,Rating,Output,Fallback Backend,Error Category,Error Hint,Raw Error'
   const rows = run.results.map((r) => {
     const c = r.config
     const m = r.metrics
@@ -74,6 +84,10 @@ export function formatAsCSV(run: ComparisonRun): string {
       m.tokenCount,
       r.rating ?? '',
       `"${output.replace(/"/g, '""')}"`,
+      r.fallbackBackend ?? '',
+      r.errorCategory ?? '',
+      `"${(r.errorHint ?? '').replace(/"/g, '""')}"`,
+      `"${(r.rawError ?? '').replace(/"/g, '""')}"`,
     ].join(',')
   })
 
