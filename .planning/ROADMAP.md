@@ -82,9 +82,9 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01-PLAN.md -- Types, store extensions, CloudApiError class, classifyCloudError utility
-- [ ] 04-02-PLAN.md -- Worker device loss detection, WASM fallback, inter-model delay, workerBridge cloud progress and error classification
-- [ ] 04-03-PLAN.md -- Weighted progress bar, cloud timer, FallbackBanner, enhanced error cards, ComparePage wiring
+- [x] 04-01-PLAN.md -- Types, store extensions, CloudApiError class, classifyCloudError utility
+- [x] 04-02-PLAN.md -- Worker device loss detection, WASM fallback, inter-model delay, workerBridge cloud progress and error classification
+- [x] 04-03-PLAN.md -- Weighted progress bar, cloud timer, FallbackBanner, enhanced error cards, ComparePage wiring
 
 ### Phase 5: Results & Export
 **Goal**: Users can analyze benchmark results through summary stats, charts, sortable tables, and output comparisons -- and export everything
