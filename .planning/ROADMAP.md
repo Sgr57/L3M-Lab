@@ -17,6 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Prompt Input & Test Controls** - Multi-line prompt, generation parameters, pre-download, run/cancel buttons
 - [ ] **Phase 4: Execution Engine & Progress** - Hardened sequential execution, streaming output, live progress, GPU memory safety, cloud API calls
 - [ ] **Phase 5: Results & Export** - Summary stats, performance charts, comparison table, output cards, JSON/CSV/Markdown export
+- [ ] **Phase 6: Cleanup & Documentation** - Remove dead code, fix visual inconsistency, update tracking docs
 
 ## Phase Details
 
@@ -104,15 +105,28 @@ Plans:
 - [x] 05-02-PLAN.md -- Visual refinements: PerformanceCharts per-model colors and custom Y-axis, ComparisonTable per-model accents, OutputComparison per-model borders
 - [x] 05-03-PLAN.md -- Export pipeline: error/fallback metadata in CSV/Markdown, Markdown file download, ExportBar button updates
 
+### Phase 6: Cleanup & Documentation
+**Goal**: Remove dead code, fix visual inconsistencies, and update tracking documentation to close all tech debt from milestone audit
+**Depends on**: Phase 5
+**Requirements**: None (tech debt closure, no new requirements)
+**Gap Closure**: Closes tech debt from v1.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. No dead exported functions remain (copyToClipboard, fetchAvailableQuantizations removed)
+  2. TestProgress uses shared BackendBadge component with consistent API/GPU/WASM labels
+  3. REQUIREMENTS.md traceability checkboxes reflect actual completion state
+  4. ROADMAP.md Phase 2 SC #2 no longer references descoped MSEL-03
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Critical Fixes | 0/2 | Planned | - |
-| 2. Model Selection & Settings | 0/3 | Not started | - |
-| 3. Prompt Input & Test Controls | 0/2 | Not started | - |
-| 4. Execution Engine & Progress | 0/3 | Not started | - |
-| 5. Results & Export | 0/3 | Not started | - |
+| 1. Foundation & Critical Fixes | 2/2 | Complete | 2026-04-10 |
+| 2. Model Selection & Settings | 3/3 | Complete | 2026-04-10 |
+| 3. Prompt Input & Test Controls | 2/2 | Complete | 2026-04-10 |
+| 4. Execution Engine & Progress | 3/3 | Complete | 2026-04-11 |
+| 5. Results & Export | 3/3 | Complete | 2026-04-11 |
+| 6. Cleanup & Documentation | 0/0 | Planned | - |
