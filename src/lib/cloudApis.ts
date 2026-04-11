@@ -6,14 +6,16 @@ interface CloudResponse {
 }
 
 export class CloudApiError extends Error {
-  constructor(
-    public readonly provider: string,
-    public readonly status: number,
-    public readonly rawBody: string,
-    message: string
-  ) {
+  readonly provider: string
+  readonly status: number
+  readonly rawBody: string
+
+  constructor(provider: string, status: number, rawBody: string, message: string) {
     super(message)
     this.name = 'CloudApiError'
+    this.provider = provider
+    this.status = status
+    this.rawBody = rawBody
   }
 }
 

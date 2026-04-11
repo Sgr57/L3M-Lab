@@ -14,7 +14,7 @@ async function attachDeviceLostHandler(): Promise<void> {
     // Access ONNX Runtime's GPU device after first WebGPU session creation
     // env.backends.onnx.webgpu.device is a Promise that resolves to the GPUDevice
     const { env } = await import('@huggingface/transformers')
-    const device = await env.backends.onnx.webgpu.device
+    const device = await env.backends.onnx?.webgpu?.device
     if (device) {
       device.lost.then((info: GPUDeviceLostInfo) => {
         // 'destroyed' means intentional cleanup, not a failure
