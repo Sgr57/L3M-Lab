@@ -5,7 +5,6 @@ import {
   formatAsCSV,
   formatAsJSON,
   downloadFile,
-  copyToClipboard,
   buildComparisonRun,
 } from '../../lib/exportUtils'
 
@@ -18,9 +17,9 @@ export function ExportBar() {
     return buildComparisonRun(prompt, parameters, configs, results, startedAt)
   }
 
-  function handleCopyMarkdown() {
+  function handleExportMarkdown() {
     const md = formatAsMarkdown(getRun())
-    copyToClipboard(md)
+    downloadFile(md, 'comparison-results.md', 'text/markdown')
   }
 
   function handleExportCSV() {
@@ -36,20 +35,20 @@ export function ExportBar() {
   return (
     <div className="flex justify-end gap-2 border-t border-border-light pt-4">
       <button
-        onClick={handleCopyMarkdown}
-        className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-text-secondary hover:bg-bg hover:text-text-primary"
+        onClick={handleExportMarkdown}
+        className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-bg hover:text-text-primary"
       >
-        Copy as Markdown
+        Export Markdown
       </button>
       <button
         onClick={handleExportCSV}
-        className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-text-secondary hover:bg-bg hover:text-text-primary"
+        className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-bg hover:text-text-primary"
       >
         Export CSV
       </button>
       <button
         onClick={handleExportJSON}
-        className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-text-secondary hover:bg-bg hover:text-text-primary"
+        className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-bg hover:text-text-primary"
       >
         Export JSON
       </button>
