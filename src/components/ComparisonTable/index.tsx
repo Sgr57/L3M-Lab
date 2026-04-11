@@ -1,5 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useCompareStore } from '../../stores/useCompareStore'
+import { getModelColor } from '../../lib/modelColors'
+import { getDisambiguatedLabels } from '../../lib/disambiguate'
+import { TypeBadge } from '../shared/TypeBadge'
+import { BackendBadge } from '../shared/BackendBadge'
+import { StarRating } from '../shared/StarRating'
 import type { TestResult, Backend } from '../../types'
 
 type SortKey =
@@ -15,6 +20,15 @@ type SortKey =
   | 'rating'
 
 type SortDir = 'asc' | 'desc'
+
+const ERROR_CATEGORY_LABELS: Record<string, string> = {
+  cors: 'CORS Blocked',
+  auth: 'Auth Failed',
+  'rate-limit': 'Rate Limited',
+  timeout: 'Timeout',
+  server: 'Server Error',
+  unknown: 'Unknown Error',
+}
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null || bytes === 0) return '--'
@@ -59,40 +73,16 @@ function getType(backend: Backend): string {
   return backend === 'api' ? 'cloud' : 'local'
 }
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number | null
-  onChange: (rating: number) => void
-}) {
-  return (
-    <span className="inline-flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          className={`cursor-pointer text-sm leading-none ${
-            value !== null && star <= value
-              ? 'text-star-filled'
-              : 'text-star-empty'
-          }`}
-          onClick={() => onChange(star)}
-        >
-          ★
-        </button>
-      ))}
-    </span>
-  )
-}
-
-export function ComparisonTable() {
+export function ComparisonTable(): React.JSX.Element | null {
   const results = useCompareStore((s) => s.results)
+  const configs = useCompareStore((s) => s.configs)
   const updateRating = useCompareStore((s) => s.updateRating)
   const [sortKey, setSortKey] = useState<SortKey>('tokensPerSecond')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
-  const handleSort = (key: SortKey) => {
+  const labels = useMemo(() => getDisambiguatedLabels(configs), [configs])
+
+  const handleSort = (key: SortKey): void => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
@@ -102,9 +92,10 @@ export function ComparisonTable() {
   }
 
   const bestWorst = useMemo(() => {
-    if (results.length < 2) return { bestTokS: -1, worstTokS: -1, bestTotal: -1, worstTotal: -1 }
-    const speeds = results.map((r) => r.metrics.tokensPerSecond)
-    const totals = results.map((r) => r.metrics.totalTime)
+    const successful = results.filter((r) => !r.error)
+    if (successful.length < 2) return { bestTokS: -1, worstTokS: -1, bestTotal: -1, worstTotal: -1 }
+    const speeds = successful.map((r) => r.metrics.tokensPerSecond)
+    const totals = successful.map((r) => r.metrics.totalTime)
     return {
       bestTokS: Math.max(...speeds),
       worstTokS: Math.min(...speeds),
@@ -126,7 +117,7 @@ export function ComparisonTable() {
 
   if (results.length === 0) return null
 
-  const arrow = (key: SortKey) =>
+  const arrow = (key: SortKey): string =>
     sortKey === key ? (sortDir === 'asc' ? ' \u2191' : ' \u2193') : ''
 
   const columns: { label: string; key: SortKey }[] = [
@@ -144,7 +135,7 @@ export function ComparisonTable() {
   ]
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="rounded-xl border border-border bg-surface p-6">
       <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
         Detailed Comparison
       </div>
@@ -155,7 +146,7 @@ export function ComparisonTable() {
               {columns.map((col) => (
                 <th
                   key={col.label}
-                  className="cursor-pointer whitespace-nowrap px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary hover:text-primary"
+                  className="cursor-pointer whitespace-nowrap px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-primary"
                   onClick={() => handleSort(col.key)}
                 >
                   {col.label}{arrow(col.key)}
@@ -165,24 +156,20 @@ export function ComparisonTable() {
           </thead>
           <tbody>
             {sorted.map((r, idx) => {
-              const rowBg =
-                r.config.backend === 'api'
-                  ? 'bg-cloud-light'
-                  : r.config.backend === 'wasm'
-                    ? 'bg-wasm-light'
-                    : ''
+              const isError = !!r.error
+              const rowClasses = `border-b border-border-light border-l-[3px] ${isError ? 'bg-error/5' : ''}`
 
               const tokClass =
-                r.metrics.tokensPerSecond === bestWorst.bestTokS
-                  ? 'text-success font-bold'
-                  : r.metrics.tokensPerSecond === bestWorst.worstTokS
+                !r.error && r.metrics.tokensPerSecond === bestWorst.bestTokS
+                  ? 'text-success font-semibold'
+                  : !r.error && r.metrics.tokensPerSecond === bestWorst.worstTokS
                     ? 'text-error'
                     : ''
 
               const totalClass =
-                r.metrics.totalTime === bestWorst.bestTotal
-                  ? 'text-success font-bold'
-                  : r.metrics.totalTime === bestWorst.worstTotal
+                !r.error && r.metrics.totalTime === bestWorst.bestTotal
+                  ? 'text-success font-semibold'
+                  : !r.error && r.metrics.totalTime === bestWorst.worstTotal
                     ? 'text-error'
                     : ''
 
@@ -191,42 +178,49 @@ export function ComparisonTable() {
               return (
                 <tr
                   key={`${r.config.id}-${idx}`}
-                  className={`border-b border-border-light ${rowBg}`}
+                  className={rowClasses}
+                  style={{ borderLeftColor: isError ? '#cf222e' : getModelColor(configs, r.config.id) }}
                 >
-                  <td className="px-2.5 py-2 font-medium text-text-primary">
-                    {r.config.displayName}
+                  <td className="px-2 py-2 font-medium text-text-primary">
+                    {labels.get(r.config.id) ?? r.config.displayName}
                   </td>
-                  <td className="px-2.5 py-2">
+                  <td className="px-2 py-2">
                     <TypeBadge type={type} backend={r.config.backend} />
+                    {isError && r.errorCategory && (
+                      <span className="ml-1 text-xs text-error">
+                        {ERROR_CATEGORY_LABELS[r.errorCategory] ?? 'Error'}
+                      </span>
+                    )}
                   </td>
-                  <td className="px-2.5 py-2 text-text-secondary">
+                  <td className="px-2 py-2 text-text-secondary">
                     {r.config.quantization.toUpperCase()}
                   </td>
-                  <td className="px-2.5 py-2">
+                  <td className="px-2 py-2">
                     <BackendBadge backend={r.config.backend} />
                   </td>
-                  <td className="px-2.5 py-2 text-text-secondary">
-                    {formatBytes(r.metrics.modelSize)}
+                  <td className="px-2 py-2 text-text-secondary">
+                    {r.error ? <span className="text-error">Error</span> : formatBytes(r.metrics.modelSize)}
                   </td>
-                  <td className="px-2.5 py-2 text-text-secondary">
-                    {formatMs(r.metrics.loadTime)}
+                  <td className="px-2 py-2 text-text-secondary">
+                    {r.error ? <span className="text-error">Error</span> : formatMs(r.metrics.loadTime)}
                   </td>
-                  <td className="px-2.5 py-2 text-text-secondary">
-                    {formatMs(r.metrics.ttft)}
+                  <td className="px-2 py-2 text-text-secondary">
+                    {r.error ? <span className="text-error">Error</span> : formatMs(r.metrics.ttft)}
                   </td>
-                  <td className={`px-2.5 py-2 ${tokClass}`}>
-                    {r.metrics.tokensPerSecond.toFixed(1)}
+                  <td className={`px-2 py-2 ${tokClass}`}>
+                    {r.error ? <span className="text-error">Error</span> : <span className={tokClass}>{r.metrics.tokensPerSecond.toFixed(1)}</span>}
                   </td>
-                  <td className={`px-2.5 py-2 ${totalClass}`}>
-                    {formatMs(r.metrics.totalTime)}
+                  <td className={`px-2 py-2 ${totalClass}`}>
+                    {r.error ? <span className="text-error">Error</span> : <span className={totalClass}>{formatMs(r.metrics.totalTime)}</span>}
                   </td>
-                  <td className="px-2.5 py-2 text-text-secondary">
-                    {r.metrics.tokenCount}
+                  <td className="px-2 py-2 text-text-secondary">
+                    {r.error ? <span className="text-error">Error</span> : r.metrics.tokenCount}
                   </td>
-                  <td className="px-2.5 py-2">
+                  <td className="px-2 py-2">
                     <StarRating
                       value={r.rating}
                       onChange={(rating) => updateRating(r.config.id, rating)}
+                      size="sm"
                     />
                   </td>
                 </tr>
@@ -236,35 +230,5 @@ export function ComparisonTable() {
         </table>
       </div>
     </div>
-  )
-}
-
-function TypeBadge({ type, backend }: { type: string; backend: Backend }) {
-  const cls =
-    type === 'cloud'
-      ? 'bg-cloud-bg text-cloud'
-      : backend === 'wasm'
-        ? 'bg-wasm-bg text-wasm'
-        : 'bg-webgpu-bg text-primary'
-
-  return (
-    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>
-      {type === 'cloud' ? 'cloud' : backend === 'wasm' ? 'local-wasm' : 'local'}
-    </span>
-  )
-}
-
-function BackendBadge({ backend }: { backend: Backend }) {
-  const cls =
-    backend === 'api'
-      ? 'bg-cloud-bg text-cloud'
-      : backend === 'wasm'
-        ? 'bg-wasm-bg text-wasm'
-        : 'bg-webgpu-bg text-primary'
-
-  return (
-    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>
-      {backend}
-    </span>
   )
 }
