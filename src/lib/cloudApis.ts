@@ -26,6 +26,8 @@ export interface ClassifiedError {
 
 export function classifyCloudError(err: unknown, provider: string, status?: number): ClassifiedError {
   const rawError = err instanceof Error ? err.message : String(err)
+  // For CloudApiError, also check the response body for keyword matching
+  const bodyText = err instanceof CloudApiError ? err.rawBody : ''
 
   // TypeError: Failed to fetch = network/CORS (fetch spec: CORS failures produce TypeError with no status)
   if (err instanceof TypeError) {
@@ -47,6 +49,18 @@ export function classifyCloudError(err: unknown, provider: string, status?: numb
         hint: `Check your ${provider} API key in Settings.`,
         rawError,
         provider,
+      }
+    }
+    // Google returns 400 for invalid API keys; check response body for auth keywords
+    if (status === 400) {
+      const lower = (rawError + ' ' + bodyText).toLowerCase()
+      if (lower.includes('api key') || lower.includes('api_key') || lower.includes('authentication') || lower.includes('credential')) {
+        return {
+          category: 'auth',
+          hint: `Check your ${provider} API key in Settings.`,
+          rawError,
+          provider,
+        }
       }
     }
     if (status === 429) {
