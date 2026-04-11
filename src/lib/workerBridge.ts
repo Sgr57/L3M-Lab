@@ -2,9 +2,11 @@ import type { WorkerCommand, WorkerEvent } from '../types/worker-messages'
 import type { TestConfig, GenerationParameters, ModelDownloadStatus } from '../types'
 import { useCompareStore } from '../stores/useCompareStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
-import { callOpenAI, callAnthropic, callGoogle } from './cloudApis'
+import { callOpenAI, callAnthropic, callGoogle, CloudApiError, classifyCloudError } from './cloudApis'
 
 let worker: Worker | null = null
+let totalModelCount = 0  // Set by startComparison, used to adjust worker progress
+let cloudModelOffset = 0  // Number of cloud models completed before worker starts
 
 function getWorker(): Worker {
   if (!worker) {
@@ -68,8 +70,8 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
       store.setRunProgress({
         configId: event.configId,
         modelName: event.modelName,
-        currentIndex: event.currentIndex,
-        totalModels: event.totalModels,
+        currentIndex: cloudModelOffset + event.currentIndex,
+        totalModels: totalModelCount,
         phase: 'loading',
         tokensGenerated: 0,
         tokensPerSecond: 0,
@@ -79,7 +81,11 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
       break
 
     case 'run-progress':
-      store.setRunProgress(event.data)
+      store.setRunProgress({
+        ...event.data,
+        currentIndex: cloudModelOffset + event.data.currentIndex,
+        totalModels: totalModelCount,
+      })
       break
 
     case 'run-complete':
@@ -118,6 +124,10 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
           error: event.message,
         })
       }
+      break
+
+    case 'device-lost':
+      store.setFallbackWarning(event.message)
       break
   }
 }
@@ -161,15 +171,20 @@ export async function startComparison(
   const cloudConfigs = configs.filter((c) => c.backend === 'api')
   const localConfigs = configs.filter((c) => c.backend !== 'api')
 
+  // Set module-level counters for worker progress adjustment
+  cloudModelOffset = cloudConfigs.length
+  totalModelCount = configs.length
+
   // Run cloud models from main thread
-  for (const config of cloudConfigs) {
+  for (let i = 0; i < cloudConfigs.length; i++) {
+    const config = cloudConfigs[i]
     try {
       store.setRunProgress({
         configId: config.id,
         modelName: config.displayName,
-        currentIndex: configs.indexOf(config),
+        currentIndex: i,
         totalModels: configs.length,
-        phase: 'generating',
+        phase: 'cloud-pending',
         tokensGenerated: 0,
         tokensPerSecond: 0,
         elapsedMs: 0,
@@ -177,8 +192,38 @@ export async function startComparison(
       })
 
       const result = await runCloudModel(config, prompt, params)
+
+      // Update progress to cloud-complete before adding result
+      store.setRunProgress({
+        configId: config.id,
+        modelName: config.displayName,
+        currentIndex: i,
+        totalModels: configs.length,
+        phase: 'cloud-complete',
+        tokensGenerated: result.metrics.tokenCount,
+        tokensPerSecond: result.metrics.tokensPerSecond,
+        elapsedMs: result.metrics.totalTime,
+        streamedText: '',
+      })
       store.addResult(result)
     } catch (err) {
+      // Classify the error using the new error classification system
+      let category: import('../types').CloudErrorCategory = 'unknown'
+      let hint = 'An unexpected error occurred.'
+      let rawError = err instanceof Error ? err.message : String(err)
+
+      if (err instanceof CloudApiError) {
+        const classified = classifyCloudError(err, err.provider, err.status)
+        category = classified.category
+        hint = classified.hint
+        rawError = classified.rawError
+      } else {
+        const classified = classifyCloudError(err, config.provider ?? 'unknown')
+        category = classified.category
+        hint = classified.hint
+        rawError = classified.rawError
+      }
+
       store.addResult({
         config,
         metrics: {
@@ -193,7 +238,10 @@ export async function startComparison(
         output: '',
         rating: null,
         timestamp: Date.now(),
-        error: err instanceof Error ? err.message : String(err),
+        error: hint,
+        errorCategory: category,
+        errorHint: hint,
+        rawError: rawError,
       })
     }
   }
@@ -250,6 +298,8 @@ export function cancelExecution() {
   store.setExecutionStatus('cancelled')
   store.setRunProgress(null)
   store.setDownloadProgress(null)
+  totalModelCount = 0
+  cloudModelOffset = 0
 
   // Terminate the worker to force-stop downloads/runs.
   // pipeline() is not abortable, so posting 'cancel' only works between models.
