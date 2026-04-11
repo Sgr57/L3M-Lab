@@ -12,11 +12,11 @@ CompareLocalLLM goes from scaffolded shells to a working browser-based LLM bench
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Critical Fixes** - COOP/COEP headers, accurate token counting, WebGPU badge, app shell with color system
-- [ ] **Phase 2: Model Selection & Settings** - HuggingFace search, model chips with config, cloud model quick-add, API key management
-- [ ] **Phase 3: Prompt Input & Test Controls** - Multi-line prompt, generation parameters, pre-download, run/cancel buttons
-- [ ] **Phase 4: Execution Engine & Progress** - Hardened sequential execution, streaming output, live progress, GPU memory safety, cloud API calls
-- [ ] **Phase 5: Results & Export** - Summary stats, performance charts, comparison table, output cards, JSON/CSV/Markdown export
+- [x] **Phase 1: Foundation & Critical Fixes** - COOP/COEP headers, accurate token counting, WebGPU badge, app shell with color system
+- [x] **Phase 2: Model Selection & Settings** - HuggingFace search, model chips with config, cloud model quick-add, API key management
+- [x] **Phase 3: Prompt Input & Test Controls** - Multi-line prompt, generation parameters, pre-download, run/cancel buttons
+- [x] **Phase 4: Execution Engine & Progress** - Hardened sequential execution, streaming output, live progress, GPU memory safety, cloud API calls
+- [x] **Phase 5: Results & Export** - Summary stats, performance charts, comparison table, output cards, JSON/CSV/Markdown export
 - [ ] **Phase 6: Cleanup & Documentation** - Remove dead code, fix visual inconsistency, update tracking docs
 
 ## Phase Details
@@ -45,6 +45,7 @@ Plans:
   2. Selected models appear as chips with working quantization selector, backend selector (WebGPU/WASM), cache status, download size estimate, and remove button
   3. Cloud model quick-add buttons appear only when the corresponding API key is present in Settings, and cloud chips are visually distinct (dashed border, purple badge)
   4. User can configure API keys on the Settings page with show/hide toggle and test-connection button per provider
+**Note**: MSEL-03 (direct model ID paste) was descoped per D-03 during Phase 2 planning. See v1.0-MILESTONE-AUDIT.md.
 **Plans**: 3 plans
 
 Plans:
