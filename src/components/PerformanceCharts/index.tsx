@@ -14,6 +14,17 @@ import { getModelColor, hexToRgba } from '../../lib/modelColors'
 import { getDisambiguatedLabels } from '../../lib/disambiguate'
 import type { Backend } from '../../types'
 
+const MAX_LABEL_CHARS = 20
+
+function splitLabel(label: string): string[] {
+  if (label.length <= MAX_LABEL_CHARS) return [label]
+  const mid = Math.ceil(label.length / 2)
+  let splitIdx = label.lastIndexOf(' ', mid)
+  if (splitIdx <= 0) splitIdx = label.indexOf(' ', mid)
+  if (splitIdx <= 0) splitIdx = mid
+  return [label.slice(0, splitIdx).trim(), label.slice(splitIdx).trim()]
+}
+
 function CustomYAxisTick({ x, y, payload, backendLookup }: {
   x: number; y: number; payload: { value: string }; backendLookup: Map<string, Backend>
 }): React.JSX.Element {
@@ -25,12 +36,25 @@ function CustomYAxisTick({ x, y, payload, backendLookup }: {
   }
   const badge = backend ? badgeColors[backend] : null
   const badgeLabel = backend === 'api' ? 'API' : backend === 'webgpu' ? 'GPU' : 'WASM'
+  const lines = splitLabel(payload.value)
+  const isMultiLine = lines.length > 1
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <text x={-8} y={0} dy={4} textAnchor="end" fontSize={12} fill="#1f2328">
-        {payload.value}
-      </text>
+      {isMultiLine ? (
+        <>
+          <text x={-8} y={0} dy={-3} textAnchor="end" fontSize={12} fill="#1f2328">
+            {lines[0]}
+          </text>
+          <text x={-8} y={0} dy={11} textAnchor="end" fontSize={12} fill="#1f2328">
+            {lines[1]}
+          </text>
+        </>
+      ) : (
+        <text x={-8} y={0} dy={4} textAnchor="end" fontSize={12} fill="#1f2328">
+          {lines[0]}
+        </text>
+      )}
       {badge && (
         <>
           <rect x={2} y={-7} width={30} height={14} rx={3} fill={badge.bg} />
@@ -47,37 +71,46 @@ export function PerformanceCharts(): React.JSX.Element | null {
   const results = useCompareStore((s) => s.results)
   const configs = useCompareStore((s) => s.configs)
 
-  const successfulResults = results.filter((r) => !r.error)
-
   const labels = useMemo(() => getDisambiguatedLabels(configs), [configs])
 
-  if (successfulResults.length === 0) return null
+  const successfulResults = useMemo(
+    () => results.filter((r) => !r.error),
+    [results]
+  )
 
-  const speedData = [...successfulResults]
-    .sort((a, b) => b.metrics.tokensPerSecond - a.metrics.tokensPerSecond)
-    .map((r) => ({
-      name: labels.get(r.config.id) ?? r.config.displayName,
-      tokensPerSecond: Number(r.metrics.tokensPerSecond.toFixed(1)),
-      backend: r.config.backend,
-      configId: r.config.id,
-    }))
+  const speedData = useMemo(
+    () =>
+      [...successfulResults]
+        .sort((a, b) => b.metrics.tokensPerSecond - a.metrics.tokensPerSecond)
+        .map((r) => ({
+          name: labels.get(r.config.id) ?? r.config.displayName,
+          tokensPerSecond: Number(r.metrics.tokensPerSecond.toFixed(1)),
+          backend: r.config.backend,
+          configId: r.config.id,
+        })),
+    [successfulResults, labels]
+  )
 
-  const timeData = [...successfulResults]
-    .sort((a, b) => a.metrics.totalTime - b.metrics.totalTime)
-    .map((r) => ({
-      name: labels.get(r.config.id) ?? r.config.displayName,
-      loadTime: r.metrics.loadTime ?? 0,
-      initTime: r.metrics.initTime ?? 0,
-      generationTime: Math.max(
-        0,
-        r.metrics.totalTime - (r.metrics.loadTime ?? 0) - (r.metrics.initTime ?? 0)
-      ),
-      backend: r.config.backend,
-      configId: r.config.id,
-      totalTimeFormatted: r.metrics.totalTime < 1000
-        ? `${Math.round(r.metrics.totalTime)}ms`
-        : `${(r.metrics.totalTime / 1000).toFixed(1)}s`,
-    }))
+  const timeData = useMemo(
+    () =>
+      [...successfulResults]
+        .sort((a, b) => a.metrics.totalTime - b.metrics.totalTime)
+        .map((r) => ({
+          name: labels.get(r.config.id) ?? r.config.displayName,
+          loadTime: r.metrics.loadTime ?? 0,
+          initTime: r.metrics.initTime ?? 0,
+          generationTime: Math.max(
+            0,
+            r.metrics.totalTime - (r.metrics.loadTime ?? 0) - (r.metrics.initTime ?? 0)
+          ),
+          backend: r.config.backend,
+          configId: r.config.id,
+          totalTimeFormatted: r.metrics.totalTime < 1000
+            ? `${Math.round(r.metrics.totalTime)}ms`
+            : `${(r.metrics.totalTime / 1000).toFixed(1)}s`,
+        })),
+    [successfulResults, labels]
+  )
 
   const backendLookup = useMemo(() => {
     const map = new Map<string, Backend>()
@@ -86,6 +119,8 @@ export function PerformanceCharts(): React.JSX.Element | null {
     return map
   }, [speedData, timeData])
 
+  if (successfulResults.length === 0) return null
+
   return (
     <div className="grid grid-cols-2 gap-4">
       {/* Tokens/sec Chart */}
@@ -93,7 +128,7 @@ export function PerformanceCharts(): React.JSX.Element | null {
         <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Tokens / sec
         </div>
-        <ResponsiveContainer width="100%" height={successfulResults.length * 44 + 40}>
+        <ResponsiveContainer width="100%" height={successfulResults.length * 52 + 40}>
           <BarChart layout="vertical" data={speedData} margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
             <XAxis type="number" tick={{ fontSize: 12 }} />
             <YAxis
@@ -124,7 +159,7 @@ export function PerformanceCharts(): React.JSX.Element | null {
         <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Time Breakdown
         </div>
-        <ResponsiveContainer width="100%" height={successfulResults.length * 44 + 40}>
+        <ResponsiveContainer width="100%" height={successfulResults.length * 52 + 40}>
           <BarChart layout="vertical" data={timeData} margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
             <XAxis type="number" tick={{ fontSize: 12 }} unit=" ms" />
             <YAxis

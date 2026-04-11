@@ -20,7 +20,6 @@ export function OutputComparison(): React.JSX.Element | null {
   const results = useCompareStore((s) => s.results)
   const configs = useCompareStore((s) => s.configs)
   const updateRating = useCompareStore((s) => s.updateRating)
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showAll, setShowAll] = useState(false)
   const [rawErrorExpanded, setRawErrorExpanded] = useState<Set<string>>(new Set())
@@ -62,33 +61,9 @@ export function OutputComparison(): React.JSX.Element | null {
 
   return (
     <div className="rounded-xl border border-border bg-surface p-6">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3">
         <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Model Outputs
-        </div>
-        <div className="flex gap-1 rounded-lg border border-border p-0.5">
-          <button
-            type="button"
-            className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-              viewMode === 'list'
-                ? 'bg-webgpu-bg text-primary'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
-            onClick={() => setViewMode('list')}
-          >
-            List
-          </button>
-          <button
-            type="button"
-            className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-              viewMode === 'grid'
-                ? 'bg-webgpu-bg text-primary'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
-            onClick={() => setViewMode('grid')}
-          >
-            Grid
-          </button>
         </div>
       </div>
 
@@ -121,11 +96,13 @@ export function OutputComparison(): React.JSX.Element | null {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-text-secondary">
-                  <span>{r.metrics.tokensPerSecond.toFixed(1)} tok/s</span>
-                  <span>{r.metrics.tokenCount} tokens</span>
-                  <span>{formatTime(r.metrics.totalTime)}</span>
-                </div>
+                {!r.error && (
+                  <div className="flex items-center gap-3 text-xs text-text-secondary">
+                    <span>{r.metrics.tokensPerSecond.toFixed(1)} tok/s</span>
+                    <span>{r.metrics.tokenCount} tokens</span>
+                    <span>{formatTime(r.metrics.totalTime)}</span>
+                  </div>
+                )}
               </div>
 
               {/* Output text or error */}
