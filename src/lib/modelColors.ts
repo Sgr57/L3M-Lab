@@ -1,17 +1,17 @@
 import type { TestConfig } from '../types'
 
-/** 10-color palette for per-model identity across charts and tables */
+/** 10-color palette matching ModelSelector CONFIG_COLORS for chip/chart consistency */
 export const MODEL_COLORS: string[] = [
-  '#2563eb',
-  '#16a34a',
-  '#d97706',
-  '#9333ea',
-  '#0891b2',
-  '#ca8a04',
-  '#6d28d9',
-  '#0d9488',
-  '#4f46e5',
-  '#059669',
+  '#3b82f6',
+  '#f97316',
+  '#22c55e',
+  '#a855f7',
+  '#ec4899',
+  '#14b8a6',
+  '#eab308',
+  '#ef4444',
+  '#06b6d4',
+  '#84cc16',
 ]
 
 /** Return the palette color for a config by its position in the configs array */

@@ -12,7 +12,6 @@ import {
 import { useCompareStore } from '../../stores/useCompareStore'
 import { getModelColor, hexToRgba } from '../../lib/modelColors'
 import { getDisambiguatedLabels } from '../../lib/disambiguate'
-import type { Backend } from '../../types'
 
 const MAX_LABEL_CHARS = 20
 
@@ -25,20 +24,9 @@ function splitLabel(label: string): string[] {
   return [label.slice(0, splitIdx).trim(), label.slice(splitIdx).trim()]
 }
 
-function CustomYAxisTick({ x, y, payload, backendLookup }: {
-  x: number; y: number; payload: { value: string }; backendLookup: Map<string, Backend>
+function CustomYAxisTick({ x, y, payload }: {
+  x: number; y: number; payload: { value: string }
 }): React.JSX.Element {
-  const backend = backendLookup.get(payload.value)
-  const badgeColors: Record<Backend, { bg: string; text: string }> = {
-    api: { bg: '#fbefff', text: '#8250df' },
-    webgpu: { bg: '#ddf4ff', text: '#0969da' },
-    wasm: { bg: '#dafbe1', text: '#1a7f37' },
-  }
-  const badge = backend ? badgeColors[backend] : null
-  const badgeLabel = backend === 'api' ? 'API' : backend === 'webgpu' ? 'GPU' : 'WASM'
-  const badgeW = badgeLabel === 'WASM' ? 38 : 30
-  const badgeX = -(badgeW + 4)
-  const textX = badgeX - 8
   const lines = splitLabel(payload.value)
   const isMultiLine = lines.length > 1
 
@@ -46,25 +34,17 @@ function CustomYAxisTick({ x, y, payload, backendLookup }: {
     <g transform={`translate(${x},${y})`}>
       {isMultiLine ? (
         <>
-          <text x={textX} y={0} dy={-3} textAnchor="end" fontSize={12} fill="#1f2328">
+          <text x={-8} y={0} dy={-3} textAnchor="end" fontSize={12} fill="#1f2328">
             {lines[0]}
           </text>
-          <text x={textX} y={0} dy={11} textAnchor="end" fontSize={12} fill="#1f2328">
+          <text x={-8} y={0} dy={11} textAnchor="end" fontSize={12} fill="#1f2328">
             {lines[1]}
           </text>
         </>
       ) : (
-        <text x={textX} y={0} dy={4} textAnchor="end" fontSize={12} fill="#1f2328">
+        <text x={-8} y={0} dy={4} textAnchor="end" fontSize={12} fill="#1f2328">
           {lines[0]}
         </text>
-      )}
-      {badge && (
-        <>
-          <rect x={badgeX} y={-7} width={badgeW} height={14} rx={3} fill={badge.bg} />
-          <text x={badgeX + badgeW / 2} y={0} dy={3} textAnchor="middle" fontSize={10} fontWeight={600} fill={badge.text}>
-            {badgeLabel}
-          </text>
-        </>
       )}
     </g>
   )
@@ -88,7 +68,6 @@ export function PerformanceCharts(): React.JSX.Element | null {
         .map((r) => ({
           name: labels.get(r.config.id) ?? r.config.displayName,
           tokensPerSecond: Number(r.metrics.tokensPerSecond.toFixed(1)),
-          backend: r.config.backend,
           configId: r.config.id,
         })),
     [successfulResults, labels]
@@ -106,7 +85,6 @@ export function PerformanceCharts(): React.JSX.Element | null {
             0,
             r.metrics.totalTime - (r.metrics.loadTime ?? 0) - (r.metrics.initTime ?? 0)
           ),
-          backend: r.config.backend,
           configId: r.config.id,
           totalTimeFormatted: r.metrics.totalTime < 1000
             ? `${Math.round(r.metrics.totalTime)}ms`
@@ -114,13 +92,6 @@ export function PerformanceCharts(): React.JSX.Element | null {
         })),
     [successfulResults, labels]
   )
-
-  const backendLookup = useMemo(() => {
-    const map = new Map<string, Backend>()
-    for (const d of speedData) map.set(d.name, d.backend)
-    for (const d of timeData) map.set(d.name, d.backend)
-    return map
-  }, [speedData, timeData])
 
   if (successfulResults.length === 0) return null
 
@@ -137,8 +108,8 @@ export function PerformanceCharts(): React.JSX.Element | null {
             <YAxis
               type="category"
               dataKey="name"
-              width={220}
-              tick={(props: Record<string, unknown>) => <CustomYAxisTick {...(props as { x: number; y: number; payload: { value: string } })} backendLookup={backendLookup} />}
+              width={180}
+              tick={(props: Record<string, unknown>) => <CustomYAxisTick {...(props as { x: number; y: number; payload: { value: string } })} />}
             />
             <Tooltip
               formatter={(value) => [`${value} tok/s`, 'Speed']}
@@ -168,8 +139,8 @@ export function PerformanceCharts(): React.JSX.Element | null {
             <YAxis
               type="category"
               dataKey="name"
-              width={220}
-              tick={(props: Record<string, unknown>) => <CustomYAxisTick {...(props as { x: number; y: number; payload: { value: string } })} backendLookup={backendLookup} />}
+              width={180}
+              tick={(props: Record<string, unknown>) => <CustomYAxisTick {...(props as { x: number; y: number; payload: { value: string } })} />}
             />
             <Tooltip
               formatter={(value, name) => [
