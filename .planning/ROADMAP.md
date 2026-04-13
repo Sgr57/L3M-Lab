@@ -28,9 +28,9 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Plans:** 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Foundation: types, usage store, cache manager library, routing, NavBar, workerBridge integration
-- [ ] 07-02-PLAN.md — CachedModelsTable: expandable table with sorting, deletion, bulk cleanup
-- [ ] 07-03-PLAN.md — ModelDownloader: search + download component, page wiring, human verification
+- [x] 07-01-PLAN.md — Foundation: types, usage store, cache manager library, routing, NavBar, workerBridge integration
+- [x] 07-02-PLAN.md — CachedModelsTable: expandable table with sorting, deletion, bulk cleanup
+- [x] 07-03-PLAN.md — ModelDownloader: search + download component, page wiring, human verification
 
 ## Progress
 
