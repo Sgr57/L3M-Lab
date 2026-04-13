@@ -455,7 +455,7 @@ for (const config of configs) {
 | A2 | `ModelRegistry.clear_cache()` works offline when config.json is cached | Pitfall 6 | Would need raw Cache API fallback; mitigation already described |
 | A3 | Cache API `keys()` returns all entries in a single call without pagination | Architecture Patterns | If browser limits this, would need iterative approach; unlikely given MDN docs [CITED: developer.mozilla.org/en-US/docs/Web/API/Cache] |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Shared files between quantizations (tokenizer, config)**
    - What we know: Multiple quantizations of the same model share `config.json`, `tokenizer.json`, `tokenizer_config.json` files in cache. These are cached under the same URL regardless of dtype.
