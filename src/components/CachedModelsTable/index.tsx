@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react'
 import { enumerateCache, groupByModelAndQuant, deleteCachedModel, getStaleModelKeys } from '../../lib/cacheManager'
 import { useModelUsageStore } from '../../stores/useModelUsageStore'
 import { formatSize } from '../../lib/formatSize'
+import { ConfirmModal } from '../ConfirmModal'
 import type { CachedModelInfo } from '../../types'
 
 /**
@@ -44,6 +45,7 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
+  const [confirmState, setConfirmState] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null)
 
   // Load cache entries on mount and whenever refreshCounter changes
   useEffect(() => {
@@ -122,46 +124,80 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
   }
 
   // Delete a single quantization
-  async function handleDeleteQuant(modelId: string, quantization: string): Promise<void> {
+  function handleDeleteQuant(modelId: string, quantization: string): void {
     const shortName = modelId.split('/').pop() ?? modelId
-    if (!window.confirm(`Delete ${quantization} cache for ${shortName}? This cannot be undone.`)) return
-
-    setDeleting(`${modelId}::${quantization}`)
-    try {
-      await deleteCachedModel(modelId, quantization)
-      useModelUsageStore.getState().removeUsage(modelId, quantization)
-      setRefreshCounter((c) => c + 1)
-      onCacheChanged?.()
-    } finally {
-      setDeleting(null)
-    }
+    setConfirmState({
+      title: `Delete ${quantization.toUpperCase()}`,
+      message: `Delete ${quantization} cache for ${shortName}? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmState(null)
+        setDeleting(`${modelId}::${quantization}`)
+        try {
+          await deleteCachedModel(modelId, quantization)
+          useModelUsageStore.getState().removeUsage(modelId, quantization)
+          setRefreshCounter((c) => c + 1)
+          onCacheChanged?.()
+        } finally {
+          setDeleting(null)
+        }
+      },
+    })
   }
 
   // Delete all quantizations for a model
-  async function handleDeleteModel(modelId: string): Promise<void> {
+  function handleDeleteModel(modelId: string): void {
     const shortName = modelId.split('/').pop() ?? modelId
     const model = models.find((m) => m.modelId === modelId)
     if (!model) return
-    if (!window.confirm(`Delete all cached files for ${shortName}? This cannot be undone.`)) return
+    setConfirmState({
+      title: `Delete ${shortName}`,
+      message: `Delete all cached files for ${shortName}? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmState(null)
+        setDeleting(modelId)
+        try {
+          for (const q of model.quantizations) {
+            await deleteCachedModel(modelId, q.quantization)
+          }
+          await deleteCachedModel(modelId)
+          useModelUsageStore.getState().removeUsage(modelId)
+          setRefreshCounter((c) => c + 1)
+          onCacheChanged?.()
+        } finally {
+          setDeleting(null)
+        }
+      },
+    })
+  }
 
-    setDeleting(modelId)
-    try {
-      // Delete each quantization individually, then clean up shared files
-      for (const q of model.quantizations) {
-        await deleteCachedModel(modelId, q.quantization)
-      }
-      // Clean up shared files (tokenizer, config, etc.)
-      await deleteCachedModel(modelId)
-      useModelUsageStore.getState().removeUsage(modelId)
-      setRefreshCounter((c) => c + 1)
-      onCacheChanged?.()
-    } finally {
-      setDeleting(null)
-    }
+  // Delete all cached models
+  function handleDeleteAll(): void {
+    const totalSize = models.reduce((sum, m) => sum + m.totalSize, 0)
+    setConfirmState({
+      title: 'Delete All Models',
+      message: `Delete all ${models.length} cached model(s) (${formatSize(totalSize)})? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmState(null)
+        setDeleting('delete-all')
+        try {
+          for (const model of models) {
+            for (const q of model.quantizations) {
+              await deleteCachedModel(model.modelId, q.quantization)
+            }
+            await deleteCachedModel(model.modelId)
+            useModelUsageStore.getState().removeUsage(model.modelId)
+          }
+          setRefreshCounter((c) => c + 1)
+          onCacheChanged?.()
+        } finally {
+          setDeleting(null)
+        }
+      },
+    })
   }
 
   // Bulk cleanup of stale models
-  async function handleCleanup(): Promise<void> {
+  function handleCleanup(): void {
     if (staleKeys.length === 0) return
 
     // Calculate total stale size for the confirmation message
@@ -172,38 +208,53 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
       if (quant) totalStaleSize += quant.size
     }
 
-    if (!window.confirm(`Delete ${staleKeys.length} model(s) not used in over 2 weeks? This frees approximately ${formatSize(totalStaleSize)}.`)) return
-
-    setDeleting('cleanup')
-    try {
-      for (const key of staleKeys) {
-        await deleteCachedModel(key.modelId, key.quantization)
-        useModelUsageStore.getState().removeUsage(key.modelId, key.quantization)
-      }
-      setRefreshCounter((c) => c + 1)
-      onCacheChanged?.()
-    } finally {
-      setDeleting(null)
-    }
+    setConfirmState({
+      title: 'Clean Up Stale Models',
+      message: `Delete ${staleKeys.length} model(s) not used in over 2 weeks? This frees approximately ${formatSize(totalStaleSize)}.`,
+      onConfirm: async () => {
+        setConfirmState(null)
+        setDeleting('cleanup')
+        try {
+          for (const key of staleKeys) {
+            await deleteCachedModel(key.modelId, key.quantization)
+            useModelUsageStore.getState().removeUsage(key.modelId, key.quantization)
+          }
+          setRefreshCounter((c) => c + 1)
+          onCacheChanged?.()
+        } finally {
+          setDeleting(null)
+        }
+      },
+    })
   }
 
   const thClass = 'cursor-pointer whitespace-nowrap px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-primary'
 
   return (
     <div className="rounded-xl border border-border bg-surface p-6">
-      {/* Toolbar: section header + cleanup button */}
+      {/* Toolbar: section header + action buttons */}
       <div className="mb-4 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Cached Models
         </span>
-        <button
-          type="button"
-          className="rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={staleKeys.length === 0 || deleting !== null}
-          onClick={() => void handleCleanup()}
-        >
-          {staleKeys.length > 0 ? `Clean Up (${staleKeys.length} unused)` : 'Clean Up'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={models.length === 0 || deleting !== null}
+            onClick={() => handleDeleteAll()}
+          >
+            Delete All
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={staleKeys.length === 0 || deleting !== null}
+            onClick={() => handleCleanup()}
+          >
+            {staleKeys.length > 0 ? `Clean Up (${staleKeys.length} unused)` : 'Clean Up'}
+          </button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -295,7 +346,7 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
                         <button
                           type="button"
                           className="p-2 text-text-tertiary hover:text-error disabled:opacity-40"
-                          onClick={() => void handleDeleteModel(model.modelId)}
+                          onClick={() => handleDeleteModel(model.modelId)}
                           disabled={deleting !== null}
                           aria-label={`Delete ${model.modelId}`}
                         >
@@ -338,7 +389,7 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
                           <button
                             type="button"
                             className="p-2 text-text-tertiary hover:text-error disabled:opacity-40"
-                            onClick={() => void handleDeleteQuant(model.modelId, q.quantization)}
+                            onClick={() => handleDeleteQuant(model.modelId, q.quantization)}
                             disabled={deleting !== null}
                             aria-label={`Delete ${q.quantization} for ${model.modelId}`}
                           >
@@ -367,6 +418,14 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmState !== null}
+        title={confirmState?.title ?? ''}
+        message={confirmState?.message ?? ''}
+        onConfirm={() => { if (confirmState?.onConfirm) void confirmState.onConfirm() }}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   )
 }

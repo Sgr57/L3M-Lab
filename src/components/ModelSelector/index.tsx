@@ -113,6 +113,41 @@ export function ModelSelector() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Rehydrate configDetails from module-level cache on mount (fixes quant dropdown after navigation)
+  useEffect(() => {
+    const existing: Record<string, { quants: Quantization[]; sizeByQuant: Record<string, number> }> = {}
+    const missing: TestConfig[] = []
+
+    for (const config of configs) {
+      if (config.backend === 'api') continue
+      const details = modelDetailsCache.get(config.modelId)
+      if (details) {
+        existing[config.id] = { quants: details.quantizations, sizeByQuant: details.sizeByQuant }
+      } else {
+        missing.push(config)
+      }
+    }
+
+    if (Object.keys(existing).length > 0) {
+      setConfigDetails((prev) => ({ ...prev, ...existing }))
+    }
+
+    // For persisted configs where modelDetailsCache is empty (page refresh),
+    // re-fetch details from HuggingFace API
+    if (missing.length > 0) {
+      for (const config of missing) {
+        fetchModelDetails(config.modelId).then((details) => {
+          modelDetailsCache.set(config.modelId, details)
+          setConfigDetails((prev) => ({
+            ...prev,
+            [config.id]: { quants: details.quantizations, sizeByQuant: details.sizeByQuant },
+          }))
+        })
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])  // only on mount
+
   async function handleSelectModel(model: HFModelResult) {
     const defaultBackend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
 
