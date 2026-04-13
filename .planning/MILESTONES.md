@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.1 Cache Management (Shipped: 2026-04-13)
+
+**Phases completed:** 1 phases, 3 plans, 4 tasks
+
+**Key accomplishments:**
+
+- Expandable cache management table with sorting, per-quantization deletion, bulk stale cleanup, and loading/empty/error states
+
+---
+
 ## v1.0 MVP (Shipped: 2026-04-12)
 
 **Phases completed:** 6 phases, 15 plans, 30 tasks

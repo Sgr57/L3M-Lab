@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A browser-based tool for comparing local LLM inference (via WebGPU/WASM using transformers.js v4) against cloud models (GPT, Claude, Gemini) side-by-side. Users select multiple models, run the same prompt through all of them, and compare outputs and performance metrics in real time. Shipped as v1.0 MVP.
+A browser-based tool for comparing local LLM inference (via WebGPU/WASM using transformers.js v4) against cloud models (GPT, Claude, Gemini) side-by-side. Users select multiple models, run the same prompt through all of them, and compare outputs and performance metrics in real time. Includes a dedicated model cache management page for browsing, downloading, and cleaning up cached models.
 
 ## Core Value
 
@@ -36,6 +36,20 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 
 (None — next milestone requirements TBD via `/gsd-new-milestone`)
 
+### Validated in v1.1
+
+- ✓ Cache enumeration via Cache API (transformers-cache bucket) — v1.1
+- ✓ Expandable cached models table grouped by quantization — v1.1
+- ✓ Table sorting by model name, size, last used — v1.1
+- ✓ Size tracking via Cache API Content-Length / blob fallback — v1.1
+- ✓ Last-used timestamp store with persistence — v1.1
+- ✓ Usage tracking integration in workerBridge.startComparison — v1.1
+- ✓ Per-quantization deletion with ModelRegistry.clear_cache + raw fallback — v1.1
+- ✓ Full model deletion with confirmation — v1.1
+- ✓ Bulk cleanup of stale models (>2 weeks unused) — v1.1
+- ✓ Model search and pre-cache download from /models page — v1.1
+- ✓ Confirmation dialogs for all destructive operations — v1.1
+
 ### Out of Scope
 
 - Persistent storage / database — all data is ephemeral, exports download to disk
@@ -49,7 +63,7 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 
 ## Context
 
-- **Shipped**: v1.0 MVP — 7 phases, 18 plans. Phase 7 added /models cache management page
+- **Shipped**: v1.1 — 7 phases, 18 plans across 2 milestones. v1.0 MVP (6 phases), v1.1 Cache Management (1 phase)
 - **Tech stack**: React 19 + Vite + TypeScript + Tailwind CSS v4 + Zustand + Recharts + React Router
 - **Architecture**: Single Web Worker for all inference, Zustand stores for state, cloud APIs called direct from browser
 - **Browser support**: Chrome 115+ (WebGPU), Firefox 120+ / Safari 17+ (WASM fallback)
@@ -73,6 +87,9 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 | Existing code is not sacred | Generated shells can be rewritten if better approach exists | ✓ Good — several components fully rewritten |
 | D-14: Download-to-file over clipboard copy | More reliable for large outputs, works cross-browser | ✓ Good — used for all exports |
 | Unified MODEL_COLORS palette | Chart bars match model chip colors for visual consistency | ✓ Good — fixed in Phase 6 |
+| ModelRegistry.clear_cache with raw fallback | Prefer HF SDK method but fall back to raw Cache API if unavailable | ✓ Good — robust deletion |
+| Usage tracking in workerBridge | Record lastUsed on every comparison start, not completion | ✓ Good — simple, reliable |
+| refreshKey remount for cache table | Force full re-enumeration after downloads/deletes via key change | ⚠ Revisit — destroys user state (sort, expanded rows) |
 
 ## Evolution
 
@@ -92,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 after Phase 7 completion*
+*Last updated: 2026-04-13 after v1.1 milestone*
