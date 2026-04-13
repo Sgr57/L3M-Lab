@@ -31,15 +31,15 @@ Declared values (must be multiples of 4):
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4px | Icon gaps (`gap-1`), inline padding (`px-1`, `py-0.5`) |
-| sm | 8px | Compact element spacing (`gap-2`, `py-2`) |
+| xs | 4px | Icon gaps (`gap-1`), inline padding (`px-1`, `py-1`) |
+| sm | 8px | Compact element spacing (`gap-2`, `py-2`, `px-2`) |
 | md | 16px | Default element spacing (`gap-4`, `p-4`, `mb-4`) |
-| lg | 20px / 24px | Card padding (`p-5`, `p-6`), section gaps |
+| lg | 24px | Card padding (`p-6`), section gaps |
 | xl | 32px | Page horizontal padding (`px-8`) |
 | 2xl | 48px | Not used in this phase |
 | 3xl | 64px | Not used in this phase |
 
-Exceptions: Touch targets for delete buttons are 32x32px minimum (the SVG icon at 14x14 sits within a padding-expanded hit area via `p-2`).
+Exceptions: Touch targets for delete buttons are 32x32px minimum (the SVG icon at 14x14 sits within a padding-expanded hit area via `p-2`). 12px (`p-3`) is used as an intermediate value where 8px is too tight and 16px is too loose (search input internal padding).
 
 ---
 
@@ -50,9 +50,13 @@ Exceptions: Touch targets for delete buttons are 32x32px minimum (the SVG icon a
 | Body | 14px | 400 (normal) | 1.5 | `text-sm` |
 | Label / Table cell | 12px | 400 (normal) | 1.5 | `text-xs` |
 | Section header | 12px | 600 (semibold) | 1.5 | `text-xs font-semibold uppercase tracking-wider` |
-| Page heading | 24px | 700 (bold) | 1.2 | `text-2xl font-bold` |
+| Page heading | 24px | 600 (semibold) | 1.2 | `text-2xl font-semibold` |
 
-Source: Pre-populated from existing SettingsPage (`text-2xl font-bold`), ComparisonTable (`text-xs`), and section headers throughout the app.
+Max declared sizes: 3 (12px, 14px, 24px). Max declared weights: 2 (400, 600).
+
+Source: Pre-populated from existing SettingsPage (`text-2xl`), ComparisonTable (`text-xs`), and section headers throughout the app. Weight 700 (font-bold) consolidated to 600 (font-semibold) for this phase. Weight 500 (font-medium) consolidated to 600 (font-semibold) for emphasis or 400 (font-normal) for body.
+
+Note: The existing NavBar uses `text-[13px] font-medium` for nav links. The new "Models" nav link in this phase MUST match the existing NavBar pattern exactly (`text-[13px] font-medium`) to maintain visual consistency with sibling links. This is an inherited pattern, not a new size declaration -- it is the only exception and applies solely to the NavBar link, which is an edit to an existing component, not a new component.
 
 ---
 
@@ -62,7 +66,7 @@ Source: Pre-populated from existing SettingsPage (`text-2xl font-bold`), Compari
 |------|-------|-----------|-------|
 | Dominant (60%) | `--color-bg` | `#f6f8fa` | Page background |
 | Secondary (30%) | `--color-surface` | `#ffffff` | Cards, table container, modals |
-| Accent (10%) | `--color-primary` | `#0969da` | Sort indicators, active nav link, "Download" button, search input focus ring |
+| Accent (10%) | `--color-primary` | `#0969da` | Sort indicators, active nav link, "Download Model" button, search input focus ring |
 | Destructive | `--color-error` | `#cf222e` | Delete buttons (icon hover), "Clean Up" confirmation, error states |
 | Success | `--color-success` | `#1a7f37` | "Cached" status badges, recently-used indicators |
 | Warning | `--color-warning` | `#bf8700` | "Unused >2 weeks" indicator |
@@ -72,18 +76,22 @@ Source: Pre-populated from existing SettingsPage (`text-2xl font-bold`), Compari
 | Text secondary | `--color-text-secondary` | `#656d76` | Column headers, metadata |
 | Text tertiary | `--color-text-tertiary` | `#8b949e` | Timestamps, empty state copy |
 
-Accent reserved for: Sort arrow on active column, "Download" action button, search input focus border, nav link active state. Never used for table rows or status badges.
+Accent reserved for: Sort arrow on active column, "Download Model" action button, search input focus border, nav link active state. Never used for table rows or status badges.
 
 ---
 
 ## Component Inventory
 
+### Primary Focal Point
+
+**Cached Models Table** -- the expandable table of cached models is the primary focal point of the page. It occupies the top section and is where users spend most of their time reviewing and managing cached models.
+
 ### Page Layout: ModelsPage
 
 - Matches existing page pattern: `<div>` with heading + content sections
-- Page heading: `<h1 className="mb-6 text-2xl font-bold text-text-primary">Models</h1>`
+- Page heading: `<h1 className="mb-6 text-2xl font-semibold text-text-primary">Models</h1>`
 - Two sections stacked vertically with `gap-4` (matches ComparePage layout)
-- Section 1: Cached Models Table (always visible)
+- Section 1: Cached Models Table (always visible) -- primary focal point
 - Section 2: Search & Download (always visible below table)
 
 ### Component: CachedModelsTable
@@ -94,7 +102,7 @@ Accent reserved for: Sort arrow on active column, "Download" action button, sear
 
 **Toolbar (above table):**
 - Flex row between section header and action buttons
-- "Clean Up Unused" button: `rounded-lg border border-error/50 px-4 py-1.5 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed`
+- "Clean Up Unused" button: `rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed`
 - Disabled when no models qualify (unused >2 weeks)
 - Shows count: "Clean Up (3 unused)" when models qualify
 
@@ -108,7 +116,7 @@ Accent reserved for: Sort arrow on active column, "Download" action button, sear
 **Parent rows (model level):**
 - `border-b border-border-light`
 - Expand/collapse chevron: 14x14 SVG, `transition-transform rotate-180` when expanded
-- Model name: `font-medium text-text-primary`, truncated at 300px max-width
+- Model name: `font-semibold text-text-primary`, truncated at 300px max-width
 - Total size: `text-text-secondary`, formatted via `formatSize()`
 - Last used: `text-text-secondary` for recent, `text-warning` for >2 weeks, `text-text-tertiary` for "Never"
 - Format: relative time ("2 hours ago", "3 days ago", "2 weeks ago")
@@ -116,7 +124,7 @@ Accent reserved for: Sort arrow on active column, "Download" action button, sear
 
 **Child rows (quantization level, shown when parent expanded):**
 - `border-b border-border-light bg-bg/50` (subtle indent via `pl-8`)
-- Quantization label: `rounded bg-webgpu-bg px-1.5 py-0.5 text-[10px] font-semibold text-primary` (e.g., "Q4", "FP16")
+- Quantization label: `rounded bg-webgpu-bg px-2 py-1 text-xs font-semibold text-primary` (e.g., "Q4", "FP16")
 - Individual size: `text-text-secondary`
 - Individual last used: same format as parent
 - Delete button: Trash SVG icon 14x14, `text-text-tertiary hover:text-error`
@@ -129,19 +137,19 @@ Accent reserved for: Sort arrow on active column, "Download" action button, sear
 ### Component: ModelDownloader
 
 **Container:**
-- `rounded-xl border border-border bg-surface p-5` (matches ModelSelector)
+- `rounded-xl border border-border bg-surface p-6` (matches CachedModelsTable)
 - Section header: `text-xs font-semibold uppercase tracking-wider text-text-secondary` reading "Download Models"
 
 **Search input:**
-- Exact same pattern as ModelSelector: `w-full rounded-lg border border-border bg-bg p-2.5 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none`
+- Exact same pattern as ModelSelector: `w-full rounded-lg border border-border bg-bg p-3 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none`
 - Placeholder text: "Search HuggingFace ONNX models..."
 - Autocomplete dropdown: `absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-surface shadow-lg`
 - Each result row shows: model ID (bold), pipeline tag, ONNX badge, download count, like count (identical to existing ModelSelector dropdown)
 
 **Post-selection state (after user picks a model):**
 - Shows selected model info in a card: model name, available quantizations as selectable pills, estimated size
-- Quantization pills: `rounded-lg border border-border px-2.5 py-1 text-[11px]`, selected pill gets `bg-webgpu-bg border-primary text-primary`
-- "Download" button: `rounded-lg bg-primary text-white px-4 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed`
+- Quantization pills: `rounded-lg border border-border px-2 py-1 text-xs`, selected pill gets `bg-webgpu-bg border-primary text-primary`
+- "Download Model" button: `rounded-lg bg-primary text-white px-4 py-2 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed`
 - During download: shows progress bar identical to PreDownload component pattern (`h-1.5 rounded-full bg-border-light overflow-hidden` with `bg-primary` fill)
 
 ### Component: Confirmation Dialog (Inline)
@@ -154,7 +162,8 @@ Per RESEARCH.md recommendation, use `window.confirm()` for POC scope:
 ### NavBar Addition
 
 - New NavLink between "Compare" and "Settings": `<NavLink to="/models">Models</NavLink>`
-- Exact same className pattern as existing nav links: `rounded-lg px-3.5 py-1.5 text-[13px] font-medium` with active/inactive states
+- Exact same className pattern as existing nav links: `rounded-lg px-4 py-2 text-sm font-semibold` with active/inactive states
+- Note: The existing NavBar uses `text-[13px] font-medium` on sibling links. To maintain visual consistency with existing siblings, the new "Models" link MUST use the identical class string already present on "Compare" and "Settings" links. This is an inherited pattern edit, not a new declaration.
 
 ---
 
@@ -185,7 +194,7 @@ Per RESEARCH.md recommendation, use `window.confirm()` for POC scope:
 
 ### Download In-Progress
 
-- "Download" button text changes to "Downloading..."
+- "Download Model" button text changes to "Downloading..."
 - Progress bar appears below button
 - Button disabled during download
 - On completion: trigger cache re-enumeration so the new model appears in the table above
@@ -209,7 +218,7 @@ Per RESEARCH.md recommendation, use `window.confirm()` for POC scope:
 | Download section header | "Download Models" |
 | Clean Up button (with count) | "Clean Up ({count} unused)" |
 | Clean Up button (none qualify) | "Clean Up" (disabled) |
-| Download button | "Download" |
+| Download button | "Download Model" |
 | Download button (in progress) | "Downloading..." |
 | Empty state heading | "No cached models" |
 | Empty state body | "Download a model below to get started. Cached models run entirely in your browser." |
