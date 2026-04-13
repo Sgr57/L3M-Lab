@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import GitHubButton from 'react-github-btn'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import logoIcon from '../../assets/logo-icon.png'
 
@@ -53,6 +54,15 @@ export function NavBar() {
             {webgpuSupported ? 'WebGPU supported' : 'WebGPU not available'}
           </span>
         )}
+        <GitHubButton
+          href="https://github.com/Sgr57/L3M-Lab"
+          data-color-scheme="no-preference: light; light: light; dark: light;"
+          data-size="large"
+          data-show-count="true"
+          aria-label="Star Sgr57/L3M-Lab on GitHub"
+        >
+          Star
+        </GitHubButton>
       </div>
     </nav>
   )
