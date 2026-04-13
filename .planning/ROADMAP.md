@@ -23,12 +23,14 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 ### Phase 7: Cache Management Page
 
 **Goal:** New /models page for managing cached LLMs — expandable table of cached models grouped by quantization, size tracking via Cache API, last-used timestamps, quick cleanup (unused >2 weeks), search and download new models via existing ModelSelector
-**Requirements**: TBD
+**Requirements:** CM-01 (routing), CM-02 (expandable table), CM-03 (sorting), CM-04 (size tracking), CM-05 (lastUsed store), CM-06 (usage tracking integration), CM-07 (delete quant), CM-08 (delete model), CM-09 (bulk cleanup), CM-10 (search + download), CM-11 (confirmation dialogs)
 **Depends on:** Phase 2
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 7 to break down)
+- [ ] 07-01-PLAN.md — Foundation: types, usage store, cache manager library, routing, NavBar, workerBridge integration
+- [ ] 07-02-PLAN.md — CachedModelsTable: expandable table with sorting, deletion, bulk cleanup
+- [ ] 07-03-PLAN.md — ModelDownloader: search + download component, page wiring, human verification
 
 ## Progress
 
@@ -40,4 +42,4 @@ Plans:
 | 4. Execution Engine & Progress | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 5. Results & Export | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 6. Cleanup & Documentation | v1.0 | 2/2 | Complete | 2026-04-12 |
-| 7. Cache Management Page | v1.1 | 0/0 | Not started | — |
+| 7. Cache Management Page | v1.1 | 0/3 | Not started | — |
