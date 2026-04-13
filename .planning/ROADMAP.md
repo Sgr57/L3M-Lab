@@ -20,6 +20,16 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 </details>
 
+### Phase 7: Cache Management Page
+
+**Goal:** New /models page for managing cached LLMs — expandable table of cached models grouped by quantization, size tracking via Cache API, last-used timestamps, quick cleanup (unused >2 weeks), search and download new models via existing ModelSelector
+**Requirements**: TBD
+**Depends on:** Phase 2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 7 to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -30,3 +40,4 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 4. Execution Engine & Progress | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 5. Results & Export | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 6. Cleanup & Documentation | v1.0 | 2/2 | Complete | 2026-04-12 |
+| 7. Cache Management Page | v1.1 | 0/0 | Not started | — |
