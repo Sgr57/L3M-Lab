@@ -29,6 +29,18 @@ export function NavBar() {
             Compare
           </NavLink>
           <NavLink
+            to="/models"
+            className={({ isActive }) =>
+              `rounded-lg px-3.5 py-1.5 text-[13px] font-medium ${
+                isActive
+                  ? 'bg-webgpu-bg text-primary'
+                  : 'text-text-secondary hover:bg-bg'
+              }`
+            }
+          >
+            Models
+          </NavLink>
+          <NavLink
             to="/settings"
             className={({ isActive }) =>
               `rounded-lg px-3.5 py-1.5 text-[13px] font-medium ${

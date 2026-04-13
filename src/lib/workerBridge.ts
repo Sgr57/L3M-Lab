@@ -2,6 +2,7 @@ import type { WorkerCommand, WorkerEvent } from '../types/worker-messages'
 import type { TestConfig, GenerationParameters, ModelDownloadStatus } from '../types'
 import { useCompareStore } from '../stores/useCompareStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
+import { useModelUsageStore } from '../stores/useModelUsageStore'
 import { callOpenAI, callAnthropic, callGoogle, CloudApiError, classifyCloudError } from './cloudApis'
 
 let worker: Worker | null = null
@@ -166,6 +167,13 @@ export async function startComparison(
   const store = useCompareStore.getState()
   store.reset()
   store.setExecutionStatus('running')
+
+  // Track model usage timestamps for cache management
+  for (const config of configs) {
+    if (config.backend !== 'api') {
+      useModelUsageStore.getState().setLastUsed(config.modelId, config.quantization)
+    }
+  }
 
   // Separate cloud and local configs
   const cloudConfigs = configs.filter((c) => c.backend === 'api')
