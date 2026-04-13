@@ -12,13 +12,14 @@ export const useModelUsageStore = create<ModelUsageState>()(
   persist(
     (set, get) => ({
       lastUsed: {},
-      setLastUsed: (modelId: string, quantization: string): void =>
+      setLastUsed: (modelId: string, quantization: string): void => {
         set((state) => ({
           lastUsed: { ...state.lastUsed, [`${modelId}::${quantization}`]: Date.now() },
-        })),
+        }))
+      },
       getLastUsed: (modelId: string, quantization: string): number | null =>
         get().lastUsed[`${modelId}::${quantization}`] ?? null,
-      removeUsage: (modelId: string, quantization?: string): void =>
+      removeUsage: (modelId: string, quantization?: string): void => {
         set((state) => {
           const next = { ...state.lastUsed }
           if (quantization) {
@@ -29,7 +30,8 @@ export const useModelUsageStore = create<ModelUsageState>()(
             }
           }
           return { lastUsed: next }
-        }),
+        })
+      },
     }),
     { name: 'model-usage-tracking' }
   )
