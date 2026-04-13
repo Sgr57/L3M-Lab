@@ -39,7 +39,7 @@ None -- discussion stayed within phase scope.
 | FNDN-02 | Worker explicit format declaration (`worker: { format: 'es' }`) in Vite config | Vite 8 worker options documented; worker already created with `type: 'module'`; format declaration aligns |
 | FNDN-03 | Token counting uses actual tokenizer output, not TextStreamer chunk count, so tok/s metric is accurate | Bug root cause identified in TextStreamer; `token_callback_function` and `tokenizer.encode()` APIs verified in library source |
 | FNDN-04 | WebGPU support detected at runtime and surfaced in NavBar as a badge | Already implemented: `webgpuDetect.ts`, `useWebGPU.ts`, NavBar badge all functional |
-| STNV-01 | Navigation bar with logo "CompareLocalLLM", links (Compare active, Settings), WebGPU badge | Already implemented in `NavBar/index.tsx`; may receive minor polish only |
+| STNV-01 | Navigation bar with logo "L3M Lab", links (Compare active, Settings), WebGPU badge | Already implemented in `NavBar/index.tsx`; may receive minor polish only |
 | STNV-05 | Consistent color coding throughout: purple (#8250df) cloud, blue (#0969da) WebGPU, green (#1a7f37) WASM | CSS custom properties already defined in `index.css` @theme block with exact hex values |
 </phase_requirements>
 

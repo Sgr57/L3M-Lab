@@ -5,7 +5,7 @@
 ## Directory Layout
 
 ```
-CompareLocalLLM/
+L3M-lab/
 ├── src/                           # Application source code
 │   ├── main.tsx                   # React app entry point
 │   ├── App.tsx                    # Root component with router

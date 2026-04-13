@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useSettingsStore } from '../../stores/useSettingsStore'
+import logoIcon from '../../assets/logo-icon.png'
 
 export function NavBar() {
   const webgpuSupported = useSettingsStore((s) => s.webgpuSupported)
@@ -7,9 +8,12 @@ export function NavBar() {
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-surface px-8 py-3">
       <div className="flex items-center gap-6">
-        <span className="text-[17px] font-bold tracking-tight text-primary">
-          CompareLocalLLM
-        </span>
+        <div className="flex items-center gap-2">
+          <img src={logoIcon} alt="" className="h-6 w-6 rounded" />
+          <span className="text-[17px] font-bold tracking-tight text-primary">
+            L3M Lab
+          </span>
+        </div>
         <div className="flex gap-1">
           <NavLink
             to="/"

@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** CompareLocalLLM
+**Project:** L3M Lab
 **Domain:** Browser-based LLM inference comparison and benchmarking tool
 **Researched:** 2026-04-10
 **Confidence:** HIGH
 
 ## Executive Summary
 
-CompareLocalLLM occupies a genuinely unique position in the LLM tooling landscape: no existing browser-based tool compares in-browser local inference (WebGPU/WASM via transformers.js) against cloud APIs side-by-side with the same prompt. Chatbot Arena handles cloud-only. WebLLM handles local-only. This app is the only one that bridges both, which is both the core differentiator and the primary source of complexity. The recommended approach is to treat the existing codebase as architecturally correct — the layered thread-isolated design with a typed worker bridge and Zustand state is exactly right — and focus development effort on completing the UI shells that already exist, fixing two critical measurement bugs, and hardening the execution path against known failure modes.
+L3M Lab occupies a genuinely unique position in the LLM tooling landscape: no existing browser-based tool compares in-browser local inference (WebGPU/WASM via transformers.js) against cloud APIs side-by-side with the same prompt. Chatbot Arena handles cloud-only. WebLLM handles local-only. This app is the only one that bridges both, which is both the core differentiator and the primary source of complexity. The recommended approach is to treat the existing codebase as architecturally correct — the layered thread-isolated design with a typed worker bridge and Zustand state is exactly right — and focus development effort on completing the UI shells that already exist, fixing two critical measurement bugs, and hardening the execution path against known failure modes.
 
 The most important non-obvious finding is that the core metric (tokens per second) is currently broken before any results UI exists. The TextStreamer callback counts chunks, not tokens, making tok/s readings unreliable and comparisons between models meaningless. This must be fixed before building any results display. The second urgent finding is a missing Vite configuration: without COOP/COEP headers, SharedArrayBuffer is unavailable and ONNX Runtime falls back to single-threaded WASM, producing misleadingly slow benchmarks in development. Both fixes are small but load-bearing.
 

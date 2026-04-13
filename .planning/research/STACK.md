@@ -1,6 +1,6 @@
 # Technology Stack
 
-**Project:** CompareLocalLLM
+**Project:** L3M Lab
 **Researched:** 2026-04-10
 
 ## Verdict: Existing Stack Is Solid -- Minor Gaps to Fill

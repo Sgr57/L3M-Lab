@@ -1,4 +1,4 @@
-# CompareLocalLLM — Compare Page Design Spec
+# L3M Lab — Compare Page Design Spec
 
 ## Context
 
@@ -71,7 +71,7 @@ All model operations (download, load, inference, dispose) run in a **single dedi
 ## Page Layout (Top to Bottom)
 
 ### 1. Navigation Bar
-- Logo: "CompareLocalLLM"
+- Logo: "L3M Lab"
 - Links: Compare (active), Settings, future test placeholders
 - Badge: WebGPU support status detection
 
@@ -281,7 +281,7 @@ interface GenerationParameters {
 
 Before any code is written, the approved design must be translated into a Figma project:
 
-1. **Create a new Figma file** — "CompareLocalLLM"
+1. **Create a new Figma file** — "L3M Lab"
 2. **Define the Design System:**
    - Color tokens: primary blue (#0969da), cloud purple (#8250df), wasm green (#1a7f37), grays, semantic colors (success, warning, error)
    - Typography scale: system font stack, sizes (11px labels, 12px body small, 13px body, 14px input, 17px logo, 22-28px stats)

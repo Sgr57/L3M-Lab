@@ -1,4 +1,4 @@
-# Roadmap: CompareLocalLLM
+# Roadmap: L3M Lab
 
 ## Milestones
 

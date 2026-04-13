@@ -54,7 +54,7 @@ completed: 2026-04-10
 ## Accomplishments
 - Enabled SharedArrayBuffer via COOP/COEP headers on both dev and preview servers for accurate multi-threaded WASM benchmarks
 - Set worker build format to 'es' matching the runtime `type: 'module'` instantiation in workerBridge.ts
-- Verified NavBar displays "CompareLocalLLM" logo, Compare/Settings navigation links, and conditional WebGPU support badge
+- Verified NavBar displays "L3M Lab" logo, Compare/Settings navigation links, and conditional WebGPU support badge
 - Verified complete WebGPU detection chain: webgpuDetect.ts -> useWebGPU.ts -> useSettingsStore -> NavBar
 
 ## Task Commits

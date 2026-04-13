@@ -30,7 +30,7 @@ Roadmap success criteria mapped to must-haves:
 |---|-------|--------|----------|
 | 1 | App runs in dev with SharedArrayBuffer available (cross-origin isolated) | ? HUMAN | `vite.config.ts` contains `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` for both `server` and `preview` blocks. Code is correct; runtime effect requires live browser session. |
 | 2 | Token count after generation matches actual tokenizer output, not TextStreamer chunk count | VERIFIED | `inference.worker.ts` uses `token_callback_function` for per-token counting, `tokenizer.encode(streamedText, { add_special_tokens: false })` for post-generation recount, and `finalTokenCount` in metrics object. `callback_function` body contains only `streamedText += text`. |
-| 3 | NavBar displays app name, navigation links (Compare active, Settings), and a WebGPU support badge that reflects runtime detection | VERIFIED | NavBar renders "CompareLocalLLM" logo, `to="/"` (Compare), `to="/settings"` (Settings), and conditionally renders "WebGPU supported" or "WebGPU not available" based on `webgpuSupported` from store. Detection chain fully wired: `App.tsx` calls `useWebGPU()` → `detectWebGPU()` → `setWebGPUSupported()` → NavBar reads `webgpuSupported`. |
+| 3 | NavBar displays app name, navigation links (Compare active, Settings), and a WebGPU support badge that reflects runtime detection | VERIFIED | NavBar renders "L3M Lab" logo, `to="/"` (Compare), `to="/settings"` (Settings), and conditionally renders "WebGPU supported" or "WebGPU not available" based on `webgpuSupported` from store. Detection chain fully wired: `App.tsx` calls `useWebGPU()` → `detectWebGPU()` → `setWebGPUSupported()` → NavBar reads `webgpuSupported`. |
 | 4 | Color coding constants (purple cloud, blue WebGPU, green WASM) are defined once and used consistently across all components | VERIFIED | `src/index.css` @theme block defines `--color-cloud: #8250df`, `--color-webgpu: #0969da`, `--color-wasm: #1a7f37` with full variant set (bg, light, chart, chart-dark). Tokens used consistently in NavBar, ComparisonTable, ModelSelector, and OutputComparison via Tailwind utility classes (bg-cloud-bg, text-cloud, bg-webgpu-bg, bg-wasm-bg, etc.). |
 
 **Score:** 4/4 truths verified (1 requires human runtime confirmation)
@@ -79,7 +79,7 @@ Roadmap success criteria mapped to must-haves:
 | finalTokenCount in metrics | `grep "finalTokenCount" inference.worker.ts` | Lines 210, 213, 235, 245 | PASS |
 | callback_function text-only | Lines 188-190 | Only `streamedText += text` | PASS |
 | Color constants hex values | `grep "color-cloud\|color-webgpu\|color-wasm" src/index.css` | All 3 primary colors with correct hex values | PASS |
-| NavBar logo text | `grep "CompareLocalLLM" NavBar/index.tsx` | Line 11 in span element | PASS |
+| NavBar logo text | `grep "L3M Lab" NavBar/index.tsx` | Line 11 in span element | PASS |
 | NavBar routes | `grep 'to="/".*to="/settings"'` | Both present lines 15, 27 | PASS |
 | WebGPU detection chain | `grep "useWebGPU" src/App.tsx` | Line 8 called at root | PASS |
 | crossOriginIsolated at runtime | N/A — requires live browser | — | SKIP (human needed) |

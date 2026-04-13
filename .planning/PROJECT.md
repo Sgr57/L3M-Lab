@@ -1,4 +1,4 @@
-# CompareLocalLLM
+# L3M Lab
 
 ## What This Is
 

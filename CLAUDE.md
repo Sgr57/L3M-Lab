@@ -1,7 +1,7 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**CompareLocalLLM**
+**L3M Lab** _(L&#179;M — Local Large Language Models Laboratory)_
 
 A browser-based POC for comparing local LLM inference (via WebGPU/WASM using transformers.js v4) against cloud models (GPT, Claude, Gemini) side-by-side. Users select multiple models, run the same prompt through all of them, and compare outputs and performance metrics in real time.
 
