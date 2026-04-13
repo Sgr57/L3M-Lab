@@ -49,7 +49,7 @@ Run LLMs entirely in the browser and benchmark them against cloud APIs — same 
 
 ## Context
 
-- **Shipped**: v1.0 MVP — 6 phases, 15 plans, 3,782 LOC TypeScript
+- **Shipped**: v1.0 MVP — 7 phases, 18 plans. Phase 7 added /models cache management page
 - **Tech stack**: React 19 + Vite + TypeScript + Tailwind CSS v4 + Zustand + Recharts + React Router
 - **Architecture**: Single Web Worker for all inference, Zustand stores for state, cloud APIs called direct from browser
 - **Browser support**: Chrome 115+ (WebGPU), Firefox 120+ / Safari 17+ (WASM fallback)
@@ -92,4 +92,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-12 after v1.0 milestone*
+*Last updated: 2026-04-13 after Phase 7 completion*
