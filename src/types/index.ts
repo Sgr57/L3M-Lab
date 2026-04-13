@@ -107,3 +107,24 @@ export interface MultiModelDownloadProgress {
   models: ModelDownloadStatus[]
   currentIndex: number
 }
+
+export interface CacheEntry {
+  modelId: string      // e.g., "HuggingFaceTB/SmolLM2-135M-Instruct"
+  filepath: string     // e.g., "onnx/model_q4.onnx"
+  url: string          // full URL (cache key)
+  size: number         // bytes from Content-Length or blob
+}
+
+export interface CachedQuantInfo {
+  quantization: string          // e.g., "q4", "fp16"
+  size: number                  // total bytes for this quant
+  lastUsed: number | null       // from useModelUsageStore
+  files: string[]               // list of cached filepaths
+}
+
+export interface CachedModelInfo {
+  modelId: string
+  totalSize: number
+  lastUsed: number | null       // most recent across all quants
+  quantizations: CachedQuantInfo[]
+}
