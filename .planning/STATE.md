@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 Phase: All complete
 Plan: N/A
 Status: v1.1 shipped
-Last activity: 2026-04-14 - Completed quick task 260413-p3d: UI/UX fixes
+Last activity: 2026-04-14 - Completed quick task 260414-hut: ONNX error handling
 
 Progress: [##########] 100%
 
@@ -72,10 +72,11 @@ None.
 
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
-| 260413-p3d | UI/UX fixes: delete-all, confirm modal, quant dropdown, cache refresh, persist state | 2026-04-14 | 3c5af7d | Needs Review | [260413-p3d](./quick/260413-p3d-ui-ux-fixes-delete-all-models-button-con/) |
+| 260413-p3d | UI/UX fixes: delete-all, confirm modal, quant dropdown, cache refresh, persist state | 2026-04-14 | 0a1eef8 | Verified | [260413-p3d](./quick/260413-p3d-ui-ux-fixes-delete-all-models-button-con/) |
+| 260414-hut | Fix ONNX runtime errors: GatherBlockQuantized + sequence length | 2026-04-14 | 5c45c4b | Needs Review | [260414-hut](./quick/260414-hut-fix-onnx-runtime-errors-gatherblockquant/) |
 
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Quick task 260413-p3d complete — awaiting browser verification
+Stopped at: Quick task 260414-hut complete — ONNX errors need runtime testing
 Resume file: N/A — start next milestone with /gsd-new-milestone
