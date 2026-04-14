@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react'
+import { useState, useEffect, useImperativeHandle, forwardRef, Fragment } from 'react'
 import { enumerateCache, groupByModelAndQuant, deleteCachedModel, getStaleModelKeys } from '../../lib/cacheManager'
 import { useModelUsageStore } from '../../stores/useModelUsageStore'
 import { useCompareStore } from '../../stores/useCompareStore'
@@ -34,11 +34,11 @@ function lastUsedColorClass(lastUsed: number | null): string {
 
 const STALE_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000
 
-interface CachedModelsTableProps {
-  onCacheChanged?: () => void
+export interface CachedModelsTableHandle {
+  refresh: () => void
 }
 
-export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): React.ReactElement {
+export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function CachedModelsTable(_props, ref): React.ReactElement {
   const [models, setModels] = useState<CachedModelInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +58,11 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
       updateConfig(config.id, { cached })
     }
   }
+
+  // Expose refresh method to parent via ref
+  useImperativeHandle(ref, () => ({
+    refresh: () => setRefreshCounter((c) => c + 1),
+  }))
 
   // Load cache entries on mount and whenever refreshCounter changes
   useEffect(() => {
@@ -156,7 +161,6 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
           }
           await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
-          onCacheChanged?.()
         } finally {
           setDeleting(null)
         }
@@ -183,7 +187,6 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
           useModelUsageStore.getState().removeUsage(modelId)
           await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
-          onCacheChanged?.()
         } finally {
           setDeleting(null)
         }
@@ -210,7 +213,6 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
           }
           await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
-          onCacheChanged?.()
         } finally {
           setDeleting(null)
         }
@@ -243,7 +245,6 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
           }
           await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
-          onCacheChanged?.()
         } finally {
           setDeleting(null)
         }
@@ -451,4 +452,4 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
       />
     </div>
   )
-}
+})
