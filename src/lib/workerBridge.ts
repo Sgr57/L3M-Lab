@@ -123,6 +123,10 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
           rating: null,
           timestamp: Date.now(),
           error: event.message,
+          errorCategory: event.errorCategory,
+          errorHint: event.errorHint ?? event.message,
+          rawError: event.message,
+          retryable: event.retryable,
         })
       }
       break

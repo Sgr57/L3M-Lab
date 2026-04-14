@@ -27,6 +27,8 @@ const ERROR_CATEGORY_LABELS: Record<string, string> = {
   'rate-limit': 'Rate Limited',
   timeout: 'Timeout',
   server: 'Server Error',
+  'session-init': 'Session Failed',
+  'model-compat': 'Not Compatible',
   unknown: 'Unknown Error',
 }
 

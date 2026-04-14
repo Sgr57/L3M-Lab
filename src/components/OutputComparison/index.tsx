@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useCompareStore } from '../../stores/useCompareStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
+import { cancelExecution, startComparison } from '../../lib/workerBridge'
 import { getModelColor } from '../../lib/modelColors'
 import { getDisambiguatedLabels } from '../../lib/disambiguate'
 import { TypeBadge } from '../shared/TypeBadge'
@@ -13,13 +15,18 @@ const ERROR_CATEGORY_LABELS: Record<string, string> = {
   'rate-limit': 'Rate Limited',
   timeout: 'Timeout',
   server: 'Server Error',
+  'session-init': 'Session Failed',
+  'model-compat': 'Not Compatible',
   unknown: 'Unknown Error',
 }
 
 export function OutputComparison(): React.JSX.Element | null {
   const results = useCompareStore((s) => s.results)
   const configs = useCompareStore((s) => s.configs)
+  const prompt = useCompareStore((s) => s.prompt)
+  const executionStatus = useCompareStore((s) => s.executionStatus)
   const updateRating = useCompareStore((s) => s.updateRating)
+  const parameters = useSettingsStore((s) => s.parameters)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showAll, setShowAll] = useState(false)
   const [rawErrorExpanded, setRawErrorExpanded] = useState<Set<string>>(new Set())
@@ -140,6 +147,26 @@ export function OutputComparison(): React.JSX.Element | null {
                       )}
                     </div>
                   )}
+                  {/* Retry / guidance actions */}
+                  <div className="flex items-center gap-2 mt-1">
+                    {r.retryable ? (
+                      <button
+                        type="button"
+                        className="rounded-lg border border-primary px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={executionStatus === 'running' || executionStatus === 'downloading'}
+                        onClick={() => {
+                          cancelExecution()
+                          void startComparison(prompt, parameters, configs)
+                        }}
+                      >
+                        Retry All Models
+                      </button>
+                    ) : (
+                      <span className="text-xs text-text-tertiary">
+                        Try removing this model and running again.
+                      </span>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div
