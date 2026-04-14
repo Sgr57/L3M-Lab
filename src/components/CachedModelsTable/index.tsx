@@ -1,6 +1,8 @@
 import { useState, useEffect, Fragment } from 'react'
 import { enumerateCache, groupByModelAndQuant, deleteCachedModel, getStaleModelKeys } from '../../lib/cacheManager'
 import { useModelUsageStore } from '../../stores/useModelUsageStore'
+import { useCompareStore } from '../../stores/useCompareStore'
+import { isModelCached } from '../../lib/cacheCheck'
 import { formatSize } from '../../lib/formatSize'
 import { ConfirmModal } from '../ConfirmModal'
 import type { CachedModelInfo } from '../../types'
@@ -46,6 +48,16 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
   const [deleting, setDeleting] = useState<string | null>(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
   const [confirmState, setConfirmState] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null)
+
+  // Sync cache status with Compare page configs after any cache mutation
+  async function syncCompareCacheStatus(): Promise<void> {
+    const { configs, updateConfig } = useCompareStore.getState()
+    const localConfigs = configs.filter((c) => c.backend !== 'api')
+    for (const config of localConfigs) {
+      const cached = await isModelCached(config.modelId, config.quantization)
+      updateConfig(config.id, { cached })
+    }
+  }
 
   // Load cache entries on mount and whenever refreshCounter changes
   useEffect(() => {
@@ -134,7 +146,15 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
         setDeleting(`${modelId}::${quantization}`)
         try {
           await deleteCachedModel(modelId, quantization)
-          useModelUsageStore.getState().removeUsage(modelId, quantization)
+          // If this was the last quantization, also remove shared model files
+          const model = models.find((m) => m.modelId === modelId)
+          if (model && model.quantizations.length <= 1) {
+            await deleteCachedModel(modelId)
+            useModelUsageStore.getState().removeUsage(modelId)
+          } else {
+            useModelUsageStore.getState().removeUsage(modelId, quantization)
+          }
+          await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
           onCacheChanged?.()
         } finally {
@@ -161,6 +181,7 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
           }
           await deleteCachedModel(modelId)
           useModelUsageStore.getState().removeUsage(modelId)
+          await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
           onCacheChanged?.()
         } finally {
@@ -187,6 +208,7 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
             await deleteCachedModel(model.modelId)
             useModelUsageStore.getState().removeUsage(model.modelId)
           }
+          await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
           onCacheChanged?.()
         } finally {
@@ -219,6 +241,7 @@ export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): R
             await deleteCachedModel(key.modelId, key.quantization)
             useModelUsageStore.getState().removeUsage(key.modelId, key.quantization)
           }
+          await syncCompareCacheStatus()
           setRefreshCounter((c) => c + 1)
           onCacheChanged?.()
         } finally {
