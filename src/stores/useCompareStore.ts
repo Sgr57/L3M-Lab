@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type {
   TestConfig,
   TestResult,
@@ -31,7 +32,9 @@ interface CompareState {
   reset: () => void
 }
 
-export const useCompareStore = create<CompareState>()((set) => ({
+export const useCompareStore = create<CompareState>()(
+  persist(
+    (set) => ({
   prompt: '',
   configs: [],
   results: [],
@@ -97,4 +100,13 @@ export const useCompareStore = create<CompareState>()((set) => ({
       downloadProgress: null,
       fallbackWarning: null,
     }),
-}))
+    }),
+    {
+      name: 'compare-llm-state',
+      partialize: (state) => ({
+        prompt: state.prompt,
+        configs: state.configs,
+      }),
+    }
+  )
+)
