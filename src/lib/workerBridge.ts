@@ -4,7 +4,6 @@ import { useCompareStore } from '../stores/useCompareStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { useModelUsageStore } from '../stores/useModelUsageStore'
 import { callOpenAI, callAnthropic, callGoogle, CloudApiError, classifyCloudError } from './cloudApis'
-import { isModelCached } from './cacheCheck'
 
 let worker: Worker | null = null
 let totalModelCount = 0  // Set by startComparison, used to adjust worker progress
@@ -58,18 +57,6 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
       }
       store.setExecutionStatus('idle')
       store.setDownloadProgress(null)
-
-      // Secondary cache check: re-verify cache status for all local configs
-      // via the actual Cache API. This covers edge cases where download progress
-      // tracking misses a model (e.g., already cached from a previous session).
-      void (async () => {
-        const currentStore = useCompareStore.getState()
-        const localConfigs = currentStore.configs.filter((c) => c.backend !== 'api')
-        for (const config of localConfigs) {
-          const cached = await isModelCached(config.modelId, config.quantization)
-          useCompareStore.getState().updateConfig(config.id, { cached })
-        }
-      })()
 
       // Terminate worker after download to clean up WASM/ONNX runtime state.
       // A fresh worker is created on the next operation.
@@ -229,7 +216,7 @@ export async function startComparison(
       store.addResult(result)
     } catch (err) {
       // Classify the error using the new error classification system
-      let category: import('../types').CloudErrorCategory = 'unknown'
+      let category: import('../types').ErrorCategory = 'unknown'
       let hint = 'An unexpected error occurred.'
       let rawError = err instanceof Error ? err.message : String(err)
 

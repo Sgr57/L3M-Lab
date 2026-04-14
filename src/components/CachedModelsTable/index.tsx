@@ -1,10 +1,7 @@
-import { useState, useEffect, useImperativeHandle, forwardRef, Fragment } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { enumerateCache, groupByModelAndQuant, deleteCachedModel, getStaleModelKeys } from '../../lib/cacheManager'
 import { useModelUsageStore } from '../../stores/useModelUsageStore'
-import { useCompareStore } from '../../stores/useCompareStore'
-import { isModelCached } from '../../lib/cacheCheck'
 import { formatSize } from '../../lib/formatSize'
-import { ConfirmModal } from '../ConfirmModal'
 import type { CachedModelInfo } from '../../types'
 
 /**
@@ -34,11 +31,11 @@ function lastUsedColorClass(lastUsed: number | null): string {
 
 const STALE_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000
 
-export interface CachedModelsTableHandle {
-  refresh: () => void
+interface CachedModelsTableProps {
+  onCacheChanged?: () => void
 }
 
-export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function CachedModelsTable(_props, ref): React.ReactElement {
+export function CachedModelsTable({ onCacheChanged }: CachedModelsTableProps): React.ReactElement {
   const [models, setModels] = useState<CachedModelInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,22 +44,6 @@ export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function Ca
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
-  const [confirmState, setConfirmState] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null)
-
-  // Sync cache status with Compare page configs after any cache mutation
-  async function syncCompareCacheStatus(): Promise<void> {
-    const { configs, updateConfig } = useCompareStore.getState()
-    const localConfigs = configs.filter((c) => c.backend !== 'api')
-    for (const config of localConfigs) {
-      const cached = await isModelCached(config.modelId, config.quantization)
-      updateConfig(config.id, { cached })
-    }
-  }
-
-  // Expose refresh method to parent via ref
-  useImperativeHandle(ref, () => ({
-    refresh: () => setRefreshCounter((c) => c + 1),
-  }))
 
   // Load cache entries on mount and whenever refreshCounter changes
   useEffect(() => {
@@ -141,87 +122,46 @@ export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function Ca
   }
 
   // Delete a single quantization
-  function handleDeleteQuant(modelId: string, quantization: string): void {
+  async function handleDeleteQuant(modelId: string, quantization: string): Promise<void> {
     const shortName = modelId.split('/').pop() ?? modelId
-    setConfirmState({
-      title: `Delete ${quantization.toUpperCase()}`,
-      message: `Delete ${quantization} cache for ${shortName}? This cannot be undone.`,
-      onConfirm: async () => {
-        setConfirmState(null)
-        setDeleting(`${modelId}::${quantization}`)
-        try {
-          await deleteCachedModel(modelId, quantization)
-          // If this was the last quantization, also remove shared model files
-          const model = models.find((m) => m.modelId === modelId)
-          if (model && model.quantizations.length <= 1) {
-            await deleteCachedModel(modelId)
-            useModelUsageStore.getState().removeUsage(modelId)
-          } else {
-            useModelUsageStore.getState().removeUsage(modelId, quantization)
-          }
-          await syncCompareCacheStatus()
-          setRefreshCounter((c) => c + 1)
-        } finally {
-          setDeleting(null)
-        }
-      },
-    })
+    if (!window.confirm(`Delete ${quantization} cache for ${shortName}? This cannot be undone.`)) return
+
+    setDeleting(`${modelId}::${quantization}`)
+    try {
+      await deleteCachedModel(modelId, quantization)
+      useModelUsageStore.getState().removeUsage(modelId, quantization)
+      setRefreshCounter((c) => c + 1)
+      onCacheChanged?.()
+    } finally {
+      setDeleting(null)
+    }
   }
 
   // Delete all quantizations for a model
-  function handleDeleteModel(modelId: string): void {
+  async function handleDeleteModel(modelId: string): Promise<void> {
     const shortName = modelId.split('/').pop() ?? modelId
     const model = models.find((m) => m.modelId === modelId)
     if (!model) return
-    setConfirmState({
-      title: `Delete ${shortName}`,
-      message: `Delete all cached files for ${shortName}? This cannot be undone.`,
-      onConfirm: async () => {
-        setConfirmState(null)
-        setDeleting(modelId)
-        try {
-          for (const q of model.quantizations) {
-            await deleteCachedModel(modelId, q.quantization)
-          }
-          await deleteCachedModel(modelId)
-          useModelUsageStore.getState().removeUsage(modelId)
-          await syncCompareCacheStatus()
-          setRefreshCounter((c) => c + 1)
-        } finally {
-          setDeleting(null)
-        }
-      },
-    })
-  }
+    if (!window.confirm(`Delete all cached files for ${shortName}? This cannot be undone.`)) return
 
-  // Delete all cached models
-  function handleDeleteAll(): void {
-    const totalSize = models.reduce((sum, m) => sum + m.totalSize, 0)
-    setConfirmState({
-      title: 'Delete All Models',
-      message: `Delete all ${models.length} cached model(s) (${formatSize(totalSize)})? This cannot be undone.`,
-      onConfirm: async () => {
-        setConfirmState(null)
-        setDeleting('delete-all')
-        try {
-          for (const model of models) {
-            for (const q of model.quantizations) {
-              await deleteCachedModel(model.modelId, q.quantization)
-            }
-            await deleteCachedModel(model.modelId)
-            useModelUsageStore.getState().removeUsage(model.modelId)
-          }
-          await syncCompareCacheStatus()
-          setRefreshCounter((c) => c + 1)
-        } finally {
-          setDeleting(null)
-        }
-      },
-    })
+    setDeleting(modelId)
+    try {
+      // Delete each quantization individually, then clean up shared files
+      for (const q of model.quantizations) {
+        await deleteCachedModel(modelId, q.quantization)
+      }
+      // Clean up shared files (tokenizer, config, etc.)
+      await deleteCachedModel(modelId)
+      useModelUsageStore.getState().removeUsage(modelId)
+      setRefreshCounter((c) => c + 1)
+      onCacheChanged?.()
+    } finally {
+      setDeleting(null)
+    }
   }
 
   // Bulk cleanup of stale models
-  function handleCleanup(): void {
+  async function handleCleanup(): Promise<void> {
     if (staleKeys.length === 0) return
 
     // Calculate total stale size for the confirmation message
@@ -232,53 +172,38 @@ export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function Ca
       if (quant) totalStaleSize += quant.size
     }
 
-    setConfirmState({
-      title: 'Clean Up Stale Models',
-      message: `Delete ${staleKeys.length} model(s) not used in over 2 weeks? This frees approximately ${formatSize(totalStaleSize)}.`,
-      onConfirm: async () => {
-        setConfirmState(null)
-        setDeleting('cleanup')
-        try {
-          for (const key of staleKeys) {
-            await deleteCachedModel(key.modelId, key.quantization)
-            useModelUsageStore.getState().removeUsage(key.modelId, key.quantization)
-          }
-          await syncCompareCacheStatus()
-          setRefreshCounter((c) => c + 1)
-        } finally {
-          setDeleting(null)
-        }
-      },
-    })
+    if (!window.confirm(`Delete ${staleKeys.length} model(s) not used in over 2 weeks? This frees approximately ${formatSize(totalStaleSize)}.`)) return
+
+    setDeleting('cleanup')
+    try {
+      for (const key of staleKeys) {
+        await deleteCachedModel(key.modelId, key.quantization)
+        useModelUsageStore.getState().removeUsage(key.modelId, key.quantization)
+      }
+      setRefreshCounter((c) => c + 1)
+      onCacheChanged?.()
+    } finally {
+      setDeleting(null)
+    }
   }
 
   const thClass = 'cursor-pointer whitespace-nowrap px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-primary'
 
   return (
     <div className="rounded-xl border border-border bg-surface p-6">
-      {/* Toolbar: section header + action buttons */}
+      {/* Toolbar: section header + cleanup button */}
       <div className="mb-4 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Cached Models
         </span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={models.length === 0 || deleting !== null}
-            onClick={() => handleDeleteAll()}
-          >
-            Delete All
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={staleKeys.length === 0 || deleting !== null}
-            onClick={() => handleCleanup()}
-          >
-            {staleKeys.length > 0 ? `Clean Up (${staleKeys.length} unused)` : 'Clean Up'}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="rounded-lg border border-error/50 px-4 py-2 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={staleKeys.length === 0 || deleting !== null}
+          onClick={() => void handleCleanup()}
+        >
+          {staleKeys.length > 0 ? `Clean Up (${staleKeys.length} unused)` : 'Clean Up'}
+        </button>
       </div>
 
       {/* Loading state */}
@@ -370,7 +295,7 @@ export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function Ca
                         <button
                           type="button"
                           className="p-2 text-text-tertiary hover:text-error disabled:opacity-40"
-                          onClick={() => handleDeleteModel(model.modelId)}
+                          onClick={() => void handleDeleteModel(model.modelId)}
                           disabled={deleting !== null}
                           aria-label={`Delete ${model.modelId}`}
                         >
@@ -413,7 +338,7 @@ export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function Ca
                           <button
                             type="button"
                             className="p-2 text-text-tertiary hover:text-error disabled:opacity-40"
-                            onClick={() => handleDeleteQuant(model.modelId, q.quantization)}
+                            onClick={() => void handleDeleteQuant(model.modelId, q.quantization)}
                             disabled={deleting !== null}
                             aria-label={`Delete ${q.quantization} for ${model.modelId}`}
                           >
@@ -442,14 +367,6 @@ export const CachedModelsTable = forwardRef<CachedModelsTableHandle>(function Ca
           </table>
         </div>
       )}
-
-      <ConfirmModal
-        open={confirmState !== null}
-        title={confirmState?.title ?? ''}
-        message={confirmState?.message ?? ''}
-        onConfirm={() => { if (confirmState?.onConfirm) void confirmState.onConfirm() }}
-        onCancel={() => setConfirmState(null)}
-      />
     </div>
   )
-})
+}

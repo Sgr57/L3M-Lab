@@ -1,6 +1,6 @@
 import { pipeline, TextStreamer, type TextGenerationPipeline } from '@huggingface/transformers'
 import type { WorkerCommand, WorkerEvent } from '../types/worker-messages'
-import type { TestConfig, GenerationParameters, TestResult, TestMetrics } from '../types'
+import type { TestConfig, GenerationParameters, TestResult, TestMetrics, ErrorCategory } from '../types'
 
 let cancelled = false
 let gpuDeviceLost = false
@@ -42,6 +42,37 @@ function isDeviceLostError(err: unknown): boolean {
     msg.includes('gpu device') ||
     msg.includes('context lost')
   )
+}
+
+function classifyLocalError(err: unknown): { message: string; errorHint: string; errorCategory: ErrorCategory; retryable: boolean } {
+  const msg = err instanceof Error ? err.message : String(err)
+
+  // ONNX session creation failure — WebGPU kernel registry not ready after download
+  if (msg.includes('ERROR_CODE: 9') || msg.includes('Could not find an implementation for')) {
+    return {
+      message: msg,
+      errorHint: 'WebGPU session failed to initialize for this model. This sometimes happens after downloading a model. Click Retry to restart.',
+      errorCategory: 'session-init',
+      retryable: true,
+    }
+  }
+
+  // transformers.js DynamicCache limitation — model architecture not supported
+  if (msg.includes('Unable to determine sequence length from the cache')) {
+    return {
+      message: msg,
+      errorHint: 'This model\'s architecture is not compatible with browser-based text generation. Try a different model or quantization.',
+      errorCategory: 'model-compat',
+      retryable: false,
+    }
+  }
+
+  return {
+    message: msg,
+    errorHint: msg,
+    errorCategory: 'unknown',
+    retryable: true,
+  }
 }
 
 self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
@@ -122,11 +153,15 @@ async function handleDownload(configs: TestConfig[]) {
         },
       })
     } catch (err) {
+      const classified = classifyLocalError(err)
       post({
         type: 'error',
         configId: config.id,
         modelName: config.displayName,
-        message: err instanceof Error ? err.message : String(err),
+        message: classified.errorHint,
+        retryable: classified.retryable,
+        errorCategory: classified.errorCategory,
+        errorHint: classified.errorHint,
       })
     }
   }
@@ -160,6 +195,7 @@ async function handleRun(
       const result = await runSingleModel(config, prompt, params, i, total)
       post({ type: 'run-complete', result })
     } catch (err) {
+      const classified = classifyLocalError(err)
       const errorResult: TestResult = {
         config,
         metrics: {
@@ -174,7 +210,11 @@ async function handleRun(
         output: '',
         rating: null,
         timestamp: Date.now(),
-        error: err instanceof Error ? err.message : String(err),
+        error: classified.errorHint,
+        errorCategory: classified.errorCategory,
+        errorHint: classified.errorHint,
+        rawError: classified.message,
+        retryable: classified.retryable,
       }
       post({ type: 'run-complete', result: errorResult })
     }

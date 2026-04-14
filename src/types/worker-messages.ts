@@ -1,4 +1,4 @@
-import type { TestConfig, GenerationParameters, TestResult, RunProgress, DownloadProgress } from '.'
+import type { TestConfig, GenerationParameters, TestResult, RunProgress, DownloadProgress, ErrorCategory } from '.'
 
 // Main thread → Worker
 export type WorkerCommand =
@@ -14,5 +14,5 @@ export type WorkerEvent =
   | { type: 'run-progress'; data: RunProgress }
   | { type: 'run-complete'; result: TestResult }
   | { type: 'all-complete' }
-  | { type: 'error'; configId?: string; modelName?: string; message: string }
+  | { type: 'error'; configId?: string; modelName?: string; message: string; retryable?: boolean; errorCategory?: ErrorCategory; errorHint?: string }
   | { type: 'device-lost'; message: string }

@@ -1,7 +1,7 @@
 export type Quantization = 'q4' | 'q8' | 'fp16' | 'fp32'
 export type Backend = 'webgpu' | 'wasm' | 'api'
 export type CloudProvider = 'openai' | 'anthropic' | 'google'
-export type CloudErrorCategory = 'cors' | 'auth' | 'rate-limit' | 'timeout' | 'server' | 'unknown'
+export type ErrorCategory = 'cors' | 'auth' | 'rate-limit' | 'timeout' | 'server' | 'session-init' | 'model-compat' | 'unknown'
 
 export type ExecutionStatus =
   | 'idle'
@@ -41,9 +41,10 @@ export interface TestResult {
   timestamp: number
   error?: string
   fallbackBackend?: Backend
-  errorCategory?: CloudErrorCategory
+  errorCategory?: ErrorCategory
   errorHint?: string
   rawError?: string
+  retryable?: boolean
 }
 
 export interface GenerationParameters {

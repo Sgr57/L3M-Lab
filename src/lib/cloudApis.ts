@@ -1,4 +1,4 @@
-import type { GenerationParameters, TestMetrics, CloudErrorCategory } from '../types'
+import type { GenerationParameters, TestMetrics, ErrorCategory } from '../types'
 
 interface CloudResponse {
   output: string
@@ -20,7 +20,7 @@ export class CloudApiError extends Error {
 }
 
 export interface ClassifiedError {
-  category: CloudErrorCategory
+  category: ErrorCategory
   hint: string
   rawError: string
   provider: string
