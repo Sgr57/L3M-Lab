@@ -46,17 +46,22 @@ function handleWorkerEvent(e: MessageEvent<WorkerEvent>) {
     }
 
     case 'download-complete': {
-      // Mark all successfully downloaded models as cached in configs
       const dp = store.downloadProgress
       if (dp) {
+        // Mark completed models as cached
         for (const model of dp.models) {
           if (model.status === 'complete') {
             store.updateConfig(model.configId, { cached: true })
           }
         }
+        // If any errors, keep downloadProgress visible so PreDownload shows retry buttons.
+        // Otherwise clear it entirely.
+        const hasErrors = dp.models.some((m) => m.status === 'error')
+        if (!hasErrors) {
+          store.setDownloadProgress(null)
+        }
       }
       store.setExecutionStatus('idle')
-      store.setDownloadProgress(null)
 
       // Terminate worker after download to clean up WASM/ONNX runtime state.
       // A fresh worker is created on the next operation.
@@ -161,6 +166,25 @@ export function startDownload(configs: TestConfig[]) {
 
   const cmd: WorkerCommand = { type: 'download', configs: uncachedLocal }
   getWorker().postMessage(cmd)
+}
+
+export function retryDownload(config: TestConfig): void {
+  const store = useCompareStore.getState()
+
+  // Reset this model's status back to waiting
+  store.updateModelDownloadStatus(config.id, {
+    status: 'waiting',
+    progress: 0,
+    loaded: 0,
+    total: 0,
+    error: undefined,
+  })
+
+  store.setExecutionStatus('downloading')
+
+  // Post single-model download command -- worker handles configs[] of length 1
+  const retryCmd: WorkerCommand = { type: 'download', configs: [config] }
+  getWorker().postMessage(retryCmd)
 }
 
 export async function startComparison(

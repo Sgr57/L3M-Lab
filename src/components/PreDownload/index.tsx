@@ -1,5 +1,5 @@
 import { useCompareStore } from '../../stores/useCompareStore'
-import { startDownload, cancelExecution } from '../../lib/workerBridge'
+import { startDownload, cancelExecution, retryDownload } from '../../lib/workerBridge'
 import { formatSize } from '../../lib/formatSize'
 
 export function PreDownload(): React.ReactElement | null {
@@ -31,6 +31,10 @@ export function PreDownload(): React.ReactElement | null {
   // at the call site makes the intent clear and avoids confusion.
   const handleDownload = (): void => startDownload(localConfigs)
 
+  // Show progress during download OR when errors need retry
+  const hasDownloadErrors = downloadProgress?.models.some((m) => m.status === 'error') ?? false
+  const showProgress = (isDownloading || hasDownloadErrors) && downloadProgress !== null
+
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-3 flex items-center justify-between">
@@ -38,6 +42,15 @@ export function PreDownload(): React.ReactElement | null {
           Pre-Download
         </div>
         <div className="flex items-center gap-3">
+          {!isDownloading && hasDownloadErrors && (
+            <button
+              type="button"
+              className="rounded-lg border border-border px-4 py-1.5 text-xs font-semibold text-text-secondary bg-surface"
+              onClick={() => useCompareStore.getState().setDownloadProgress(null)}
+            >
+              Dismiss
+            </button>
+          )}
           {isDownloading && (
             <button
               type="button"
@@ -72,8 +85,8 @@ export function PreDownload(): React.ReactElement | null {
         </div>
       )}
 
-      {/* Per-model progress list during download (per D-06) */}
-      {isDownloading && downloadProgress && (
+      {/* Per-model progress list during download OR when errors need retry */}
+      {showProgress && (
         <div className="space-y-2">
           {downloadProgress.models.map((model) => (
             <div key={model.configId} className="flex items-center gap-3 text-xs">
@@ -114,7 +127,21 @@ export function PreDownload(): React.ReactElement | null {
                   <span className="text-text-tertiary">Waiting</span>
                 )}
                 {model.status === 'error' && (
-                  <span className="text-error">{model.error ?? 'Error'}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-error truncate">{model.error ?? 'Error'}</span>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded border border-primary px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const config = configs.find((c) => c.id === model.configId)
+                        if (config) retryDownload(config)
+                      }}
+                      disabled={isDownloading}
+                    >
+                      Retry
+                    </button>
+                  </div>
                 )}
               </div>
 
