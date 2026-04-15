@@ -4,8 +4,10 @@ import { searchModels, fetchModelDetails } from '../../lib/hfSearch'
 import type { ModelDetails } from '../../lib/hfSearch'
 import { isModelCached } from '../../lib/cacheCheck'
 import { formatSize } from '../../lib/formatSize'
+import { enumerateCache, groupByModelAndQuant } from '../../lib/cacheManager'
 import { useCompareStore } from '../../stores/useCompareStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
+import { useModelUsageStore } from '../../stores/useModelUsageStore'
 import type {
   Quantization,
   Backend,
@@ -59,6 +61,9 @@ export function ModelSelector() {
   // Track model details per config (quantizations + sizes, loaded on-demand)
   const [configDetails, setConfigDetails] = useState<Record<string, { quants: Quantization[]; sizeByQuant: Record<string, number> }>>({})
   const [cloudAccordionOpen, setCloudAccordionOpen] = useState(false)
+  const [cachedAccordionOpen, setCachedAccordionOpen] = useState(false)
+  const [cachedRows, setCachedRows] = useState<{ modelId: string; quantization: string; size: number; lastUsed: number | null }[]>([])
+  const [cachedLoading, setCachedLoading] = useState(false)
   const [customModelInputs, setCustomModelInputs] = useState<Record<CloudProvider, { open: boolean; value: string }>>({
     openai: { open: false, value: '' },
     anthropic: { open: false, value: '' },
@@ -112,6 +117,53 @@ export function ModelSelector() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Load cached models when accordion opens, and reload when executionStatus transitions to idle
+  useEffect(() => {
+    // Only load when accordion is open, and not during active download
+    if (!cachedAccordionOpen || executionStatus === 'downloading') return
+
+    let cancelled = false
+    setCachedLoading(true)
+
+    enumerateCache().then((entries) => {
+      if (cancelled) return
+      const grouped = groupByModelAndQuant(entries, useModelUsageStore.getState())
+      // Flatten: one row per model+quantization
+      const rows = grouped.flatMap((m) =>
+        m.quantizations.map((q) => ({
+          modelId: m.modelId,
+          quantization: q.quantization,
+          size: q.size,
+          lastUsed: q.lastUsed,
+        }))
+      )
+      setCachedRows(rows)
+      setCachedLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [cachedAccordionOpen, executionStatus])
+
+  function handleAddCachedModel(row: { modelId: string; quantization: string; size: number }): void {
+    const backend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
+    // Duplicate check: same modelId + quantization + non-api backend
+    const alreadyAdded = configs.some(
+      (c) => c.modelId === row.modelId && c.quantization === row.quantization && c.backend !== 'api'
+    )
+    if (alreadyAdded) return
+
+    const config: TestConfig = {
+      id: `${row.modelId}-${row.quantization}-${backend}-${crypto.randomUUID()}`,
+      modelId: row.modelId,
+      displayName: row.modelId.split('/').pop() ?? row.modelId,
+      quantization: row.quantization as Quantization,
+      backend,
+      estimatedSize: row.size,
+      cached: true,
+    }
+    addConfig(config)
+  }
 
   async function handleSelectModel(model: HFModelResult) {
     const defaultBackend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
@@ -207,6 +259,80 @@ export function ModelSelector() {
     <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-secondary">
         Models
+      </div>
+
+      {/* Cached Models Accordion -- before HF search */}
+      <div className="mb-4 rounded-lg border border-border">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-text-secondary"
+          onClick={() => setCachedAccordionOpen(!cachedAccordionOpen)}
+          disabled={disabled}
+        >
+          <span>Cached Models</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={`transition-transform ${cachedAccordionOpen ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {cachedAccordionOpen && (
+          <div className="border-t border-border px-4 pb-3 pt-2">
+            {cachedLoading ? (
+              <div className="text-xs text-text-tertiary">Loading cached models...</div>
+            ) : cachedRows.length === 0 ? (
+              <div className="text-xs text-text-tertiary">No models cached yet. Download models to see them here.</div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-wider text-text-tertiary">
+                    <th className="pb-1.5 font-semibold">Model</th>
+                    <th className="pb-1.5 font-semibold">Quant</th>
+                    <th className="pb-1.5 font-semibold text-right">Size</th>
+                    <th className="pb-1.5 font-semibold text-right">Last Used</th>
+                    <th className="pb-1.5 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cachedRows.map((row) => {
+                    const alreadyAdded = configs.some(
+                      (c) => c.modelId === row.modelId && c.quantization === row.quantization && c.backend !== 'api'
+                    )
+                    return (
+                      <tr
+                        key={`${row.modelId}-${row.quantization}`}
+                        className={`border-t border-border/50 ${alreadyAdded ? 'opacity-40' : 'hover:bg-bg cursor-pointer'}`}
+                        onClick={() => !alreadyAdded && !disabled && handleAddCachedModel(row)}
+                      >
+                        <td className="py-1.5 pr-2 truncate max-w-[200px]" title={row.modelId}>
+                          {row.modelId.split('/').pop() ?? row.modelId}
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <span className="rounded bg-webgpu-bg px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                            {row.quantization}
+                          </span>
+                        </td>
+                        <td className="py-1.5 text-right text-text-tertiary">{formatSize(row.size)}</td>
+                        <td className="py-1.5 text-right text-text-tertiary">
+                          {row.lastUsed ? formatRelativeTime(row.lastUsed) : 'Never'}
+                        </td>
+                        <td className="py-1.5 text-right">
+                          {alreadyAdded ? (
+                            <span className="text-text-tertiary text-[10px]">added</span>
+                          ) : (
+                            <span className="text-primary text-[11px] font-semibold">+</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Search input with autocomplete */}
@@ -506,4 +632,15 @@ function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
   return String(n)
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
 }
