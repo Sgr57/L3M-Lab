@@ -145,7 +145,7 @@ export function ModelSelector() {
     return () => { cancelled = true }
   }, [cachedAccordionOpen, executionStatus])
 
-  function handleAddCachedModel(row: { modelId: string; quantization: string; size: number }): void {
+  async function handleAddCachedModel(row: { modelId: string; quantization: string; size: number }): Promise<void> {
     const backend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
 
     const config: TestConfig = {
@@ -159,14 +159,25 @@ export function ModelSelector() {
     }
     addConfig(config)
 
-    // Populate configDetails so quant dropdown works for cached models
-    const modelRows = cachedRows.filter((r) => r.modelId === row.modelId)
-    const quants = modelRows.map((r) => r.quantization as Quantization)
-    const sizeByQuant: Record<string, number> = {}
-    for (const r of modelRows) sizeByQuant[r.quantization] = r.size
+    // Fetch ALL HF quants (same as HF search flow), with cache-only fallback
+    let details = modelDetailsCache.get(row.modelId)
+    if (!details) {
+      try {
+        details = await fetchModelDetails(row.modelId)
+        modelDetailsCache.set(row.modelId, details)
+      } catch {
+        // Offline fallback: use only cached quants
+        const modelRows = cachedRows.filter((r) => r.modelId === row.modelId)
+        const quants = modelRows.map((r) => r.quantization as Quantization)
+        const sizeByQuant: Record<string, number> = {}
+        for (const r of modelRows) sizeByQuant[r.quantization] = r.size
+        details = { quantizations: quants, sizeByQuant }
+      }
+    }
+
     setConfigDetails((prev) => ({
       ...prev,
-      [config.id]: { quants, sizeByQuant },
+      [config.id]: { quants: details!.quantizations, sizeByQuant: details!.sizeByQuant },
     }))
   }
 
