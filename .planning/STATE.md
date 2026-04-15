@@ -75,9 +75,10 @@ None.
 | 260413-p3d | UI/UX fixes: delete-all, confirm modal, quant dropdown, cache refresh, persist state | 2026-04-14 | 0a1eef8 | Verified | [260413-p3d](./quick/260413-p3d-ui-ux-fixes-delete-all-models-button-con/) |
 | 260414-hut | Fix ONNX runtime errors: GatherBlockQuantized + sequence length | 2026-04-14 | 5c45c4b | Needs Review | [260414-hut](./quick/260414-hut-fix-onnx-runtime-errors-gatherblockquant/) |
 | 260415-ntl | Cached models accordion in ModelSelector + per-model retry button | 2026-04-15 | 1f21551 | Needs Review | [260415-ntl](./quick/260415-ntl-cached-models-accordion-and-retry-button/) |
+| 260415-psw | Cached quant selection + ONNX-only sizes + SPA routing + cloud accordion restyle | 2026-04-15 | ce02d0f | Needs Review | [260415-psw](./quick/260415-psw-cached-quant-sizes-spa-routing-cloud-acc/) |
 
 ## Session Continuity
 
-Last session: 2026-04-14
+Last activity: 2026-04-15
 Stopped at: Quick task 260414-hut complete — ONNX errors need runtime testing
 Resume file: N/A — start next milestone with /gsd-new-milestone
