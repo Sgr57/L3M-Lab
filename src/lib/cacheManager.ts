@@ -54,8 +54,8 @@ export function quantizationFromFilepath(filepath: string): string | null {
 
 /**
  * Group cache entries into a hierarchical structure by model and quantization.
- * Files with null quantization (config.json, tokenizer.json) are counted in
- * the model's total size but not assigned to any quantization group.
+ * Files with null quantization (config.json, tokenizer.json) are skipped entirely.
+ * totalSize counts only ONNX model weight files for consistency with HF size estimates.
  */
 export function groupByModelAndQuant(
   entries: CacheEntry[],
@@ -74,13 +74,10 @@ export function groupByModelAndQuant(
   for (const [modelId, modelEntries] of byModel) {
     // Sub-group by quantization
     const byQuant = new Map<string, { size: number; files: string[] }>()
-    let sharedSize = 0
 
     for (const entry of modelEntries) {
       const quant = quantizationFromFilepath(entry.filepath)
       if (quant === null) {
-        // Shared files (config.json, tokenizer.json, etc.) — count in total only
-        sharedSize += entry.size
         continue
       }
 
@@ -109,8 +106,8 @@ export function groupByModelAndQuant(
       }
     }
 
-    // Total size includes all quantizations plus shared files
-    const totalSize = quantizations.reduce((sum, q) => sum + q.size, 0) + sharedSize
+    // Total size: ONNX model weight files only (excludes shared files like tokenizer, config)
+    const totalSize = quantizations.reduce((sum, q) => sum + q.size, 0)
 
     result.push({
       modelId,
