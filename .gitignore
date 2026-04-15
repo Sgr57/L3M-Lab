@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .superpowers/
 .playwright-mcp/
+graphify-out/
+.planning/
+.claude/
