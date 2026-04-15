@@ -159,13 +159,11 @@ export const useModelUsageStore = create<{
   <action>
 Add a "Cached Models" accordion to ModelSelector, placed BEFORE the HF search input (`<div ref={wrapperRef}`). Follow the existing cloud accordion pattern exactly.
 
-**New imports at top of file:**
+**New imports at top of file** (`formatSize` is already imported at line 6 -- do NOT add it again):
 ```typescript
 import { enumerateCache, groupByModelAndQuant } from '../../lib/cacheManager'
 import { useModelUsageStore } from '../../stores/useModelUsageStore'
-import { formatSize } from '../../lib/formatSize'  // already imported? check — yes, it IS NOT imported, add it
 ```
-Note: `formatSize` is NOT currently imported in ModelSelector. Add it.
 
 **New state variables** inside `ModelSelector()`, after `cloudAccordionOpen`:
 ```typescript
@@ -174,7 +172,7 @@ const [cachedRows, setCachedRows] = useState<{ modelId: string; quantization: st
 const [cachedLoading, setCachedLoading] = useState(false)
 ```
 
-**Cache data loading useEffect** — load when accordion opens, and reload when `executionStatus` transitions to `'idle'` (catches post-download refresh). Do NOT reload while `executionStatus === 'downloading'` (partial cache files). Place after the existing search useEffect:
+**Cache data loading useEffect** -- load when accordion opens, and reload when `executionStatus` transitions to `'idle'` (catches post-download refresh). Do NOT reload while `executionStatus === 'downloading'` (partial cache files). Place after the existing search useEffect:
 
 ```typescript
 useEffect(() => {
@@ -204,7 +202,7 @@ useEffect(() => {
 }, [cachedAccordionOpen, executionStatus])
 ```
 
-**Click handler** — add cached model to configs with auto WebGPU/WASM backend, duplicate prevention:
+**Click handler** -- add cached model to configs with auto WebGPU/WASM backend, duplicate prevention:
 
 ```typescript
 function handleAddCachedModel(row: { modelId: string; quantization: string; size: number }) {
@@ -228,10 +226,10 @@ function handleAddCachedModel(row: { modelId: string; quantization: string; size
 }
 ```
 
-**Accordion JSX** — insert BEFORE the `<div ref={wrapperRef}>` search section. Render only if `cachedRows.length > 0` OR `cachedAccordionOpen` (so toggling open triggers load even when empty). Match the cloud accordion's visual structure:
+**Accordion JSX** -- insert BEFORE the `<div ref={wrapperRef}>` search section. Render only if `cachedRows.length > 0` OR `cachedAccordionOpen` (so toggling open triggers load even when empty). Match the cloud accordion's visual structure:
 
 ```tsx
-{/* Cached Models Accordion — before HF search (per CONTEXT.md) */}
+{/* Cached Models Accordion -- before HF search (per CONTEXT.md) */}
 <div className="mb-4 rounded-lg border border-border">
   <button
     type="button"
@@ -306,7 +304,7 @@ function handleAddCachedModel(row: { modelId: string; quantization: string; size
 </div>
 ```
 
-**Helper function** — add after `formatCount()` at bottom of file:
+**Helper function** -- add after `formatCount()` at bottom of file:
 
 ```typescript
 function formatRelativeTime(timestamp: number): string {
@@ -324,9 +322,9 @@ function formatRelativeTime(timestamp: number): string {
 **Key details:**
 - Accordion closed by default (matching cloud accordion pattern, per Claude's Discretion)
 - Empty state shows helpful message when no cached models
-- `formatSize` is imported from `../../lib/formatSize` (same utility used elsewhere)
+- `formatSize` is already imported at line 6 -- reuse it, do NOT add a duplicate import
 - Rows are clickable to add, with visual disabled state when already added
-- No backend picker dialog — auto-selects WebGPU with WASM fallback (per CONTEXT.md)
+- No backend picker dialog -- auto-selects WebGPU with WASM fallback (per CONTEXT.md)
   </action>
   <verify>
     <automated>cd /Users/emanuele/Projects/CompareLocalLLM && npx tsc --noEmit 2>&1 | head -30</automated>
@@ -392,7 +390,7 @@ export function retryDownload(config: TestConfig): void {
 
   store.setExecutionStatus('downloading')
 
-  // Post single-model download command — worker handles configs[] of length 1
+  // Post single-model download command -- worker handles configs[] of length 1
   const cmd: WorkerCommand = { type: 'download', configs: [config] }
   getWorker().postMessage(cmd)
 }
@@ -470,7 +468,7 @@ Replace it with:
 **Key details:**
 - The retry button is disabled while another download is in progress (prevents concurrent downloads)
 - `e.stopPropagation()` prevents any parent click handlers from firing
-- After retry, `download-complete` fires again from worker — the handler re-evaluates `hasErrors` to decide whether to clear progress
+- After retry, `download-complete` fires again from worker -- the handler re-evaluates `hasErrors` to decide whether to clear progress
 - The dismiss button lets users clear error state manually when they don't want to retry
   </action>
   <verify>
@@ -501,12 +499,12 @@ Replace it with:
 <verification>
 1. TypeScript compiles: `npx tsc --noEmit` passes with zero errors
 2. Dev server runs: `npm run dev` starts without errors
-3. Cached accordion: Open ModelSelector, click "Cached Models" — rows appear with name/quant/size/last-used
-4. Cached selection: Click a cached model row — config chip appears with correct backend and "Cached" badge
-5. Duplicate prevention: Click same cached model again — row is dimmed, no duplicate added
-6. Download error persistence: Trigger a download failure (use invalid model ID) — error row stays visible after download completes
-7. Retry button: Error row shows "Retry" button — click it — model re-downloads individually
-8. Dismiss: Click "Dismiss" — error progress clears, UI returns to normal
+3. Cached accordion: Open ModelSelector, click "Cached Models" -- rows appear with name/quant/size/last-used
+4. Cached selection: Click a cached model row -- config chip appears with correct backend and "Cached" badge
+5. Duplicate prevention: Click same cached model again -- row is dimmed, no duplicate added
+6. Download error persistence: Trigger a download failure (use invalid model ID) -- error row stays visible after download completes
+7. Retry button: Error row shows "Retry" button -- click it -- model re-downloads individually
+8. Dismiss: Click "Dismiss" -- error progress clears, UI returns to normal
 </verification>
 
 <success_criteria>

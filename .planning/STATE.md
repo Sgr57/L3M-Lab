@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 Phase: All complete
 Plan: N/A
 Status: v1.1 shipped
-Last activity: 2026-04-14 - Completed quick task 260414-hut: ONNX error handling
+Last activity: 2026-04-15 - Completed quick task 260415-ntl: Cached models accordion + retry button
 
 Progress: [##########] 100%
 
@@ -74,6 +74,7 @@ None.
 |---|-------------|------|--------|--------|-----------|
 | 260413-p3d | UI/UX fixes: delete-all, confirm modal, quant dropdown, cache refresh, persist state | 2026-04-14 | 0a1eef8 | Verified | [260413-p3d](./quick/260413-p3d-ui-ux-fixes-delete-all-models-button-con/) |
 | 260414-hut | Fix ONNX runtime errors: GatherBlockQuantized + sequence length | 2026-04-14 | 5c45c4b | Needs Review | [260414-hut](./quick/260414-hut-fix-onnx-runtime-errors-gatherblockquant/) |
+| 260415-ntl | Cached models accordion in ModelSelector + per-model retry button | 2026-04-15 | 1f21551 | Needs Review | [260415-ntl](./quick/260415-ntl-cached-models-accordion-and-retry-button/) |
 
 ## Session Continuity
 
