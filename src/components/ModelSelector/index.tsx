@@ -147,11 +147,6 @@ export function ModelSelector() {
 
   function handleAddCachedModel(row: { modelId: string; quantization: string; size: number }): void {
     const backend: Backend = webgpuSupported ? 'webgpu' : 'wasm'
-    // Duplicate check: same modelId + quantization + non-api backend
-    const alreadyAdded = configs.some(
-      (c) => c.modelId === row.modelId && c.quantization === row.quantization && c.backend !== 'api'
-    )
-    if (alreadyAdded) return
 
     const config: TestConfig = {
       id: `${row.modelId}-${row.quantization}-${backend}-${crypto.randomUUID()}`,
@@ -163,6 +158,16 @@ export function ModelSelector() {
       cached: true,
     }
     addConfig(config)
+
+    // Populate configDetails so quant dropdown works for cached models
+    const modelRows = cachedRows.filter((r) => r.modelId === row.modelId)
+    const quants = modelRows.map((r) => r.quantization as Quantization)
+    const sizeByQuant: Record<string, number> = {}
+    for (const r of modelRows) sizeByQuant[r.quantization] = r.size
+    setConfigDetails((prev) => ({
+      ...prev,
+      [config.id]: { quants, sizeByQuant },
+    }))
   }
 
   async function handleSelectModel(model: HFModelResult) {
@@ -296,38 +301,29 @@ export function ModelSelector() {
                   </tr>
                 </thead>
                 <tbody>
-                  {cachedRows.map((row) => {
-                    const alreadyAdded = configs.some(
-                      (c) => c.modelId === row.modelId && c.quantization === row.quantization && c.backend !== 'api'
-                    )
-                    return (
-                      <tr
-                        key={`${row.modelId}-${row.quantization}`}
-                        className={`border-t border-border/50 ${alreadyAdded ? 'opacity-40' : 'hover:bg-bg cursor-pointer'}`}
-                        onClick={() => !alreadyAdded && !disabled && handleAddCachedModel(row)}
-                      >
-                        <td className="py-1.5 pr-2 truncate max-w-[200px]" title={row.modelId}>
-                          {row.modelId.split('/').pop() ?? row.modelId}
-                        </td>
-                        <td className="py-1.5 pr-2">
-                          <span className="rounded bg-webgpu-bg px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                            {row.quantization}
-                          </span>
-                        </td>
-                        <td className="py-1.5 text-right text-text-tertiary">{formatSize(row.size)}</td>
-                        <td className="py-1.5 text-right text-text-tertiary">
-                          {row.lastUsed ? formatRelativeTime(row.lastUsed) : 'Never'}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {alreadyAdded ? (
-                            <span className="text-text-tertiary text-[10px]">added</span>
-                          ) : (
-                            <span className="text-primary text-[11px] font-semibold">+</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {cachedRows.map((row) => (
+                    <tr
+                      key={`${row.modelId}-${row.quantization}`}
+                      className="border-t border-border/50 hover:bg-bg cursor-pointer"
+                      onClick={() => !disabled && handleAddCachedModel(row)}
+                    >
+                      <td className="py-1.5 pr-2 truncate max-w-[200px]" title={row.modelId}>
+                        {row.modelId.split('/').pop() ?? row.modelId}
+                      </td>
+                      <td className="py-1.5 pr-2">
+                        <span className="rounded bg-webgpu-bg px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          {row.quantization}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-right text-text-tertiary">{formatSize(row.size)}</td>
+                      <td className="py-1.5 text-right text-text-tertiary">
+                        {row.lastUsed ? formatRelativeTime(row.lastUsed) : 'Never'}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        <span className="text-primary text-[11px] font-semibold">+</span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
