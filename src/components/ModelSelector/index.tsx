@@ -308,7 +308,6 @@ export function ModelSelector() {
                     <th className="pb-1.5 font-semibold">Quant</th>
                     <th className="pb-1.5 font-semibold text-right">Size</th>
                     <th className="pb-1.5 font-semibold text-right">Last Used</th>
-                    <th className="pb-1.5 w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -330,9 +329,6 @@ export function ModelSelector() {
                       <td className="py-1.5 text-right text-text-tertiary">
                         {row.lastUsed ? formatRelativeTime(row.lastUsed) : 'Never'}
                       </td>
-                      <td className="py-1.5 text-right">
-                        <span className="text-primary text-[11px] font-semibold">+</span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -341,6 +337,130 @@ export function ModelSelector() {
           </div>
         )}
       </div>
+
+      {/* Cloud Models Accordion -- table rows style, after cached accordion */}
+      {(['openai', 'anthropic', 'google'] as CloudProvider[]).some((p) => apiKeys[p]) && (
+        <div className="mb-4 rounded-lg border border-border">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-text-secondary"
+            onClick={() => setCloudAccordionOpen(!cloudAccordionOpen)}
+            disabled={disabled}
+          >
+            <span>Cloud Models</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              className={`transition-transform ${cloudAccordionOpen ? 'rotate-180' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {cloudAccordionOpen && (
+            <div className="border-t border-border px-4 pb-3 pt-2">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-wider text-text-tertiary">
+                    <th className="pb-1.5 font-semibold">Provider</th>
+                    <th className="pb-1.5 font-semibold">Model</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(['openai', 'anthropic', 'google'] as CloudProvider[])
+                    .filter((p) => apiKeys[p])
+                    .flatMap((provider) =>
+                      CLOUD_MODELS
+                        .filter((cm) => cm.provider === provider)
+                        .map((cm) => {
+                          const alreadyAdded = configs.some(
+                            (c) => c.provider === cm.provider && c.cloudModel === cm.cloudModel
+                          )
+                          return (
+                            <tr
+                              key={cm.cloudModel}
+                              className={`border-t border-border/50 ${
+                                alreadyAdded
+                                  ? 'opacity-40 cursor-not-allowed'
+                                  : 'hover:bg-bg cursor-pointer'
+                              }`}
+                              onClick={() =>
+                                !alreadyAdded && !disabled &&
+                                handleAddCloudModel(cm.provider, cm.displayName, cm.cloudModel)
+                              }
+                            >
+                              <td className="py-1.5 pr-2">
+                                <span className="rounded bg-cloud-bg px-1.5 py-0.5 text-[10px] font-semibold text-cloud">
+                                  {cm.provider}
+                                </span>
+                              </td>
+                              <td className="py-1.5 font-medium text-text-primary">
+                                {cm.displayName}
+                              </td>
+                            </tr>
+                          )
+                        })
+                    )}
+                </tbody>
+              </table>
+              {/* Custom model inputs -- per provider, below the table */}
+              {(['openai', 'anthropic', 'google'] as CloudProvider[])
+                .filter((p) => apiKeys[p])
+                .map((provider) => {
+                  const customInput = customModelInputs[provider]
+                  return (
+                    <div key={provider} className="mt-2 first:mt-3">
+                      {!customInput.open ? (
+                        <button
+                          type="button"
+                          className="text-[11px] text-text-tertiary hover:text-text-secondary"
+                          onClick={() => setCustomModelInputs((prev) => ({
+                            ...prev,
+                            [provider]: { ...prev[provider], open: true },
+                          }))}
+                          disabled={disabled}
+                        >
+                          + Custom {provider} model
+                        </button>
+                      ) : (
+                        <div className="flex gap-1.5">
+                          <span className="flex items-center rounded bg-cloud-bg px-1.5 py-0.5 text-[10px] font-semibold text-cloud">
+                            {provider}
+                          </span>
+                          <input
+                            type="text"
+                            className="flex-1 rounded border border-border bg-bg px-2 py-1 text-[11px] text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none"
+                            placeholder="model-id (e.g. gpt-4-turbo)"
+                            value={customInput.value}
+                            onChange={(e) => setCustomModelInputs((prev) => ({
+                              ...prev,
+                              [provider]: { ...prev[provider], value: e.target.value },
+                            }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleAddCustomCloudModel(provider)
+                              if (e.key === 'Escape') setCustomModelInputs((prev) => ({
+                                ...prev,
+                                [provider]: { open: false, value: '' },
+                              }))
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="rounded border border-border bg-bg px-2 py-1 text-[11px] text-primary hover:bg-surface"
+                            onClick={() => handleAddCustomCloudModel(provider)}
+                            disabled={!customInput.value.trim()}
+                          >
+                            Add
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search input with autocomplete */}
       <div ref={wrapperRef} className="relative mb-4">
@@ -512,117 +632,6 @@ export function ModelSelector() {
             </div>
             )
           })}
-        </div>
-      )}
-
-      {/* Cloud Models Accordion (per D-07) -- closed by default */}
-      {(['openai', 'anthropic', 'google'] as CloudProvider[]).some((p) => apiKeys[p]) && (
-        <div className="rounded-lg border border-border">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-text-secondary"
-            onClick={() => setCloudAccordionOpen(!cloudAccordionOpen)}
-            disabled={disabled}
-          >
-            <span>Cloud Models</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              className={`transition-transform ${cloudAccordionOpen ? 'rotate-180' : ''}`}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-          {cloudAccordionOpen && (
-            <div className="border-t border-border px-4 pb-3 pt-2">
-              {(['openai', 'anthropic', 'google'] as CloudProvider[]).filter((p) => apiKeys[p]).map((provider) => {
-                const providerModels = CLOUD_MODELS.filter((cm) => cm.provider === provider)
-                const customInput = customModelInputs[provider]
-                return (
-                  <div key={provider} className="mb-3 last:mb-0">
-                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
-                      {provider}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {providerModels.map((cm) => {
-                        const alreadyAdded = configs.some(
-                          (c) => c.provider === cm.provider && c.cloudModel === cm.cloudModel
-                        )
-                        return (
-                          <button
-                            key={cm.cloudModel}
-                            type="button"
-                            className={`rounded-lg border border-dashed border-border px-2.5 py-1 text-[11px] transition-colors ${
-                              alreadyAdded
-                                ? 'opacity-40 cursor-not-allowed'
-                                : 'hover:bg-bg cursor-pointer'
-                            }`}
-                            onClick={() =>
-                              !alreadyAdded &&
-                              handleAddCloudModel(cm.provider, cm.displayName, cm.cloudModel)
-                            }
-                            disabled={disabled || alreadyAdded}
-                          >
-                            <span className="font-medium text-text-primary">{cm.displayName}</span>
-                            {alreadyAdded ? (
-                              <span className="ml-1 text-text-tertiary">added</span>
-                            ) : (
-                              <span className="ml-1 text-primary">+</span>
-                            )}
-                          </button>
-                        )
-                      })}
-                      {/* [+] Custom model ID button (per D-09) */}
-                      {!customInput.open && (
-                        <button
-                          type="button"
-                          className="rounded-lg border border-dashed border-border px-2.5 py-1 text-[11px] text-text-tertiary hover:bg-bg"
-                          onClick={() => setCustomModelInputs((prev) => ({
-                            ...prev,
-                            [provider]: { ...prev[provider], open: true },
-                          }))}
-                          disabled={disabled}
-                        >
-                          + Custom
-                        </button>
-                      )}
-                    </div>
-                    {/* Custom model ID input (per D-09) -- no validation, errors at execution */}
-                    {customInput.open && (
-                      <div className="mt-1.5 flex gap-1.5">
-                        <input
-                          type="text"
-                          className="flex-1 rounded border border-border bg-bg px-2 py-1 text-[11px] text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none"
-                          placeholder="model-id (e.g. gpt-4-turbo)"
-                          value={customInput.value}
-                          onChange={(e) => setCustomModelInputs((prev) => ({
-                            ...prev,
-                            [provider]: { ...prev[provider], value: e.target.value },
-                          }))}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleAddCustomCloudModel(provider)
-                            if (e.key === 'Escape') setCustomModelInputs((prev) => ({
-                              ...prev,
-                              [provider]: { open: false, value: '' },
-                            }))
-                          }}
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          className="rounded border border-border bg-bg px-2 py-1 text-[11px] text-primary hover:bg-surface"
-                          onClick={() => handleAddCustomCloudModel(provider)}
-                          disabled={!customInput.value.trim()}
-                        >
-                          Add
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
       )}
 
