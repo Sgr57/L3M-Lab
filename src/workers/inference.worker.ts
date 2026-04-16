@@ -154,15 +154,36 @@ async function handleDownload(configs: TestConfig[]) {
       })
     } catch (err) {
       const classified = classifyLocalError(err)
-      post({
-        type: 'error',
-        configId: config.id,
-        modelName: config.displayName,
-        message: classified.errorHint,
-        retryable: classified.retryable,
-        errorCategory: classified.errorCategory,
-        errorHint: classified.errorHint,
-      })
+
+      // session-init errors (ERROR_CODE: 9, missing WASM kernel) happen AFTER
+      // the model files have been downloaded and cached.  pipeline() downloads
+      // first, then tries to create an ONNX inference session -- when that
+      // session creation fails the files are still in the Cache API.  For
+      // pre-download (whose only purpose is to populate the cache) this is a
+      // success, not a failure.  Mark the download as complete so the config
+      // gets cached:true and PreDownload shows the green checkmark.
+      if (classified.errorCategory === 'session-init') {
+        post({
+          type: 'download-progress',
+          data: {
+            configId: config.id,
+            modelName: config.displayName,
+            progress: 100,
+            loaded: 0,
+            total: 0,
+          },
+        })
+      } else {
+        post({
+          type: 'error',
+          configId: config.id,
+          modelName: config.displayName,
+          message: classified.errorHint,
+          retryable: classified.retryable,
+          errorCategory: classified.errorCategory,
+          errorHint: classified.errorHint,
+        })
+      }
     }
   }
 
