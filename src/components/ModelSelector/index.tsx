@@ -593,6 +593,11 @@ export function ModelSelector() {
                   }`}>
                     {config.cached ? 'Cached' : 'Not cached'}
                   </span>
+                  {config.quantization === 'q4' && config.backend === 'wasm' && (
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-warning-bg text-warning">
+                      q4 requires WebGPU
+                    </span>
+                  )}
                 </div>
               </div>
             )

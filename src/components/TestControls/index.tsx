@@ -16,13 +16,18 @@ export function TestControls(): React.ReactElement {
   const uncachedLocalModels = configs.filter((c) => c.backend !== 'api' && !c.cached)
   const hasUncachedModels = uncachedLocalModels.length > 0
 
-  const canRun = !isBusy && hasConfigs && hasPrompt && !hasUncachedModels
+  // Check for incompatible dtype/backend combos (q4 requires WebGPU, not WASM)
+  const incompatibleModels = configs.filter((c) => c.quantization === 'q4' && c.backend === 'wasm')
+  const hasIncompatible = incompatibleModels.length > 0
+
+  const canRun = !isBusy && hasConfigs && hasPrompt && !hasUncachedModels && !hasIncompatible
 
   // Determine why the button is disabled
   let disabledReason = ''
   if (isBusy) disabledReason = 'Execution in progress...'
   else if (!hasConfigs) disabledReason = 'Select at least one model'
   else if (!hasPrompt) disabledReason = 'Enter a prompt'
+  else if (hasIncompatible) disabledReason = 'q4 quantization requires WebGPU — switch to q8 or change backend'
   else if (hasUncachedModels) disabledReason = `${uncachedLocalModels.length} model${uncachedLocalModels.length !== 1 ? 's' : ''} not downloaded yet`
 
   return (
