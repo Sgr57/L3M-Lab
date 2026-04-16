@@ -47,13 +47,18 @@ function isDeviceLostError(err: unknown): boolean {
 function classifyLocalError(err: unknown): { message: string; errorHint: string; errorCategory: ErrorCategory; retryable: boolean } {
   const msg = err instanceof Error ? err.message : String(err)
 
-  // ONNX session creation failure — WebGPU kernel registry not ready after download
+  // ONNX session creation failure — missing kernel for this dtype/backend combo.
+  // Common cause: q4 quantization uses MatMulNBits op which only has a WebGPU kernel,
+  // so it fails on WASM.  q8 is the safe default for WASM.
   if (msg.includes('ERROR_CODE: 9') || msg.includes('Could not find an implementation for')) {
+    const isQ4 = msg.includes('MatMulNBits') || msg.includes('q4')
     return {
       message: msg,
-      errorHint: 'WebGPU session failed to initialize for this model. This sometimes happens after downloading a model. Click Retry to restart.',
+      errorHint: isQ4
+        ? 'This quantization (q4) is not supported on the WASM backend. Try q8 quantization or use a browser with WebGPU support (Chrome/Edge).'
+        : 'Session failed to initialize — the ONNX runtime is missing a required operator for this model. Try a different quantization or backend.',
       errorCategory: 'session-init',
-      retryable: true,
+      retryable: false,
     }
   }
 
@@ -155,13 +160,11 @@ async function handleDownload(configs: TestConfig[]) {
     } catch (err) {
       const classified = classifyLocalError(err)
 
-      // session-init errors (ERROR_CODE: 9, missing WASM kernel) happen AFTER
-      // the model files have been downloaded and cached.  pipeline() downloads
-      // first, then tries to create an ONNX inference session -- when that
-      // session creation fails the files are still in the Cache API.  For
-      // pre-download (whose only purpose is to populate the cache) this is a
-      // success, not a failure.  Mark the download as complete so the config
-      // gets cached:true and PreDownload shows the green checkmark.
+      // session-init errors (e.g. q4 on WASM — missing MatMulNBits kernel)
+      // happen AFTER files are already cached.  pipeline() downloads first,
+      // then creates an ONNX session — when session creation fails the files
+      // are still in the Cache API.  For pre-download (whose only purpose is
+      // to populate the cache) this is a success, not a failure.
       if (classified.errorCategory === 'session-init') {
         post({
           type: 'download-progress',
